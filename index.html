@@ -28,6 +28,7 @@
 
   <!-- BANNER -->
   <div class="emergency-banner">
+    Emergencia activa — Terremoto en Venezuela. Si estas en peligro llama al <strong>911</strong>
   </div>
 
   <!-- HERO -->
@@ -109,11 +110,11 @@
               <span class="field-error" id="err_r_email"></span>
             </div>
             <div class="form-group">
-              <label>En que dias y horarios puedes ayudar?</label>
-              <p class="field-hint">Marca los dias y el rango de hora. Puedes agregar varios horarios.</p>
+              <label>En que fechas y horarios puedes ayudar?</label>
+              <p class="field-hint">Elige una fecha del calendario y el rango de hora. Puedes agregar varias fechas, incluso varios horarios en el mismo dia.</p>
               <div id="rangosContainer"></div>
               <button type="button" class="btn-add-rango" onclick="agregarRango()">
-                + Agregar otro horario
+                + Agregar otra fecha
               </button>
               <span class="field-error" id="err_rangos"></span>
             </div>
@@ -130,7 +131,7 @@
           <div class="success-message hidden" id="registroSuccess">
             <div class="success-icon">✓</div>
             <h3>Registrado!</h3>
-            <p>Gracias por querer ayudar. Te avisaremos cuando haya una necesidad en tu horario.</p>
+            <p>Gracias por querer ayudar. Si ya estabas registrado, tu nuevo horario fue agregado a los que ya tenias. Te avisaremos cuando haya una necesidad en tu horario.</p>
             <button class="btn btn--ghost btn--sm" onclick="resetRegistro()">Registrar otra persona</button>
           </div>
         </div>
