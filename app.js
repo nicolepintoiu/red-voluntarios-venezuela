@@ -125,14 +125,26 @@ function opcionesHora() {
   return html;
 }
 
-function agregarRango(desdeH='2', desdeAmpm='PM', hastaH='6', hastaAmpm='PM') {
+const DIAS_SEMANA = ['Lunes', 'Martes', 'Miercoles', 'Jueves', 'Viernes', 'Sabado', 'Domingo'];
+
+function agregarRango(diasSeleccionados = [], desdeH='2', desdeAmpm='PM', hastaH='6', hastaAmpm='PM') {
   const container = document.getElementById('rangosContainer');
-  const id        = Date.now();
+  const id        = Date.now() + Math.floor(Math.random()*1000);
   const div       = document.createElement('div');
-  div.className   = 'rango-item';
+  div.className   = 'rango-block';
   div.id          = 'rango-' + id;
-  div.innerHTML   = `
-    <div class="rango-selects">
+
+  const diasHtml = DIAS_SEMANA.map(dia => `
+    <label class="dia-chip">
+      <input type="checkbox" class="dia-checkbox" value="${dia}" ${diasSeleccionados.includes(dia) ? 'checked' : ''} />
+      <span>${dia.slice(0,3)}</span>
+    </label>
+  `).join('');
+
+  div.innerHTML = `
+    <p class="dias-label">Dias</p>
+    <div class="dias-grid">${diasHtml}</div>
+    <div class="rango-block-hora">
       <select class="rango-select-hora rango-desde-h">${opcionesHora()}</select>
       <select class="rango-select-ampm rango-desde-ampm">
         <option value="AM">AM</option><option value="PM">PM</option>
@@ -143,7 +155,8 @@ function agregarRango(desdeH='2', desdeAmpm='PM', hastaH='6', hastaAmpm='PM') {
         <option value="AM">AM</option><option value="PM">PM</option>
       </select>
     </div>
-    <button type="button" class="rango-delete" onclick="eliminarRango('rango-${id}')" title="Eliminar">✕</button>`;
+    <span class="rango-block-delete" onclick="eliminarRango('rango-${id}')">Eliminar este horario ✕</span>`;
+
   container.appendChild(div);
   div.querySelector('.rango-desde-h').value    = desdeH;
   div.querySelector('.rango-desde-ampm').value = desdeAmpm;
@@ -165,18 +178,21 @@ function a24h(hora, ampm) {
 }
 
 function getRangos() {
-  const items  = document.querySelectorAll('.rango-item');
+  const items  = document.querySelectorAll('.rango-block');
   const rangos = [];
   items.forEach(item => {
+    const dias = Array.from(item.querySelectorAll('.dia-checkbox:checked')).map(c => c.value);
     const desdeH    = item.querySelector('.rango-desde-h');
     const desdeAmpm = item.querySelector('.rango-desde-ampm');
     const hastaH    = item.querySelector('.rango-hasta-h');
     const hastaAmpm = item.querySelector('.rango-hasta-ampm');
     if (!desdeH || !desdeAmpm || !hastaH || !hastaAmpm) return;
+    if (!dias.length) return; // sin dias seleccionados, se ignora este bloque
     rangos.push({
+      dias: dias,
       desde: a24h(desdeH.value, desdeAmpm.value),
       hasta: a24h(hastaH.value, hastaAmpm.value),
-      texto: `${desdeH.value}:00 ${desdeAmpm.value} - ${hastaH.value}:00 ${hastaAmpm.value}`,
+      texto: `${dias.join(', ')}: ${desdeH.value}:00 ${desdeAmpm.value} - ${hastaH.value}:00 ${hastaAmpm.value}`,
     });
   });
   return rangos;
@@ -193,7 +209,7 @@ document.getElementById('registroForm').addEventListener('submit', async (e) => 
 
   const rangos = getRangos();
   if (!rangos.length) {
-    document.getElementById('err_rangos').textContent = 'Agrega al menos un rango de horario.';
+    document.getElementById('err_rangos').textContent = 'Agrega al menos un horario con sus dias.';
     return;
   }
   document.getElementById('err_rangos').textContent = '';
