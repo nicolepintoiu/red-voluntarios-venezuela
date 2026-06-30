@@ -292,6 +292,10 @@ function getHoraVacante() {
   return { display: `${h}:00 ${ampm}`, valor24: a24h(h, ampm) };
 }
 
+function getFechaVacante() {
+  return document.getElementById('v_fecha')?.value || '';
+}
+
 function updatePreview() {
   const select = document.getElementById('v_institucion');
   const idx    = select.value;
@@ -301,9 +305,16 @@ function updatePreview() {
     const inst = todasInstituciones[parseInt(idx)];
     lugar = inst.nombre; direccion = inst.direccion;
   }
-  const cuando = tipo === 'ahora'
-    ? '<strong>AHORA MISMO</strong>'
-    : `a las <strong>${getHoraVacante().display}</strong>`;
+
+  let cuando;
+  if (tipo === 'ahora') {
+    cuando = '<strong>AHORA MISMO</strong>';
+  } else {
+    const fecha = getFechaVacante();
+    const fechaTexto = fecha ? formatearFecha(fecha) : '[fecha]';
+    cuando = `el <strong>${fechaTexto}</strong> a las <strong>${getHoraVacante().display}</strong>`;
+  }
+
   document.getElementById('notifyText').innerHTML =
     `Se necesitan voluntarios en <strong>${esc(lugar)}</strong> ubicado en ${esc(direccion)}, ${cuando}.`;
 }
@@ -324,14 +335,26 @@ document.getElementById('vacanteForm').addEventListener('submit', async (e) => {
 
   const inst   = todasInstituciones[parseInt(idx)];
   const tipo   = document.querySelector('input[name="cuando_tipo"]:checked').value;
-  const hora   = getHoraVacante();
   document.getElementById('err_cuando').textContent = '';
-  const cuando = tipo === 'ahora' ? 'AHORA MISMO' : hora.valor24;
+
+  let cuando, fecha;
+  if (tipo === 'ahora') {
+    cuando = 'AHORA MISMO';
+    fecha  = ''; // el backend usa la fecha de hoy automaticamente
+  } else {
+    fecha = getFechaVacante();
+    if (!fecha) {
+      document.getElementById('err_cuando').textContent = 'Selecciona el dia en que se necesitan.';
+      return;
+    }
+    cuando = getHoraVacante().valor24;
+  }
 
   const data = {
     lugar:       inst.nombre,
     direccion:   inst.direccion,
     cuando:      cuando,
+    fecha:       fecha,
     descripcion: form.descripcion.value.trim(),
     contacto:    CORREO_ADMIN,
   };
