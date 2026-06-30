@@ -1,0 +1,248 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Red Voluntarios Venezuela — Emergencia Terremoto</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+
+  <!-- HEADER -->
+  <header class="site-header">
+    <div class="container header-inner">
+      <a href="#" class="logo" onclick="showView('refugios')">Red Voluntarios VE</a>
+      <nav class="main-nav" id="mainNav">
+        <button class="nav-btn active"          onclick="showView('refugios')">Ver instituciones</button>
+        <button class="nav-btn"                 onclick="showView('registro')">Soy voluntario</button>
+        <button class="nav-btn nav-btn--accent" onclick="showView('vacante')">Necesito voluntarios</button>
+      </nav>
+      <button class="hamburger" id="hamburger" aria-label="Abrir menu">
+        <span></span><span></span><span></span>
+      </button>
+    </div>
+  </header>
+
+  <!-- BANNER -->
+  <div class="emergency-banner">
+  </div>
+
+  <!-- HERO -->
+  <section class="hero">
+    <div class="container hero-inner">
+      <p class="hero-eyebrow">Red de respuesta ciudadana · Venezuela</p>
+      <h1 class="hero-title">Si puedes ayudar, registrate con tus horarios disponibles. Si necesitas voluntarios en un lugar, publicalo y avisamos de inmediato.</h1>
+      <div class="hero-actions">
+        <button class="btn btn--primary" onclick="showView('registro')">Quiero ser voluntario</button>
+        <button class="btn btn--ghost"   onclick="showView('vacante')">Necesito voluntarios</button>
+      </div>
+
+      <!-- CONTADORES -->
+      <div class="hero-stats">
+        <div class="stat-card">
+          <span class="stat-num" id="contadorVoluntarios">—</span>
+          <span class="stat-label">Voluntarios registrados</span>
+        </div>
+        <div class="stat-divider"></div>
+        <div class="stat-card">
+          <span class="stat-num" id="contadorInstituciones">—</span>
+          <span class="stat-label">Instituciones activas</span>
+        </div>
+      </div>
+    </div>
+    <div class="hero-bg-shape" aria-hidden="true"></div>
+  </section>
+
+  <!-- VIEW 1 — REFUGIOS -->
+  <main id="view-refugios" class="view active">
+    <section class="section">
+      <div class="container">
+        <div class="section-header">
+          <p class="section-eyebrow">Directorio</p>
+          <h2 class="section-title">Centros de ayuda activos</h2>
+          <p class="section-desc">Lugares verificados donde se esta ayudando a personas afectadas y a edificios que se cayeron.</p>
+        </div>
+        <div class="filter-bar">
+          <input type="text" id="searchInput" class="search-bar"
+            placeholder="Buscar por nombre o direccion…" oninput="filterCards()" />
+          <span class="search-icon">⌕</span>
+        </div>
+        <div id="cardGrid" class="card-grid">
+          <div class="skeleton-card"></div>
+          <div class="skeleton-card"></div>
+          <div class="skeleton-card"></div>
+        </div>
+        <div class="refresh-row">
+          <button class="btn btn--ghost btn--sm" onclick="loadRefugios()">Actualizar</button>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <!-- VIEW 2 — REGISTRO VOLUNTARIO -->
+  <main id="view-registro" class="view">
+    <section class="section">
+      <div class="container form-container">
+        <div class="form-sidebar">
+          <p class="section-eyebrow">Voluntarios</p>
+          <h2 class="section-title">Registrate para ayudar</h2>
+          <p class="section-desc">Indica en que horarios puedes ayudar. Cuando alguien publique una necesidad dentro de tu horario, te avisamos por correo al instante.</p>
+          <ul class="benefit-list">
+            <li>Puedes agregar varios rangos de horario</li>
+            <li>Solo te avisamos cuando tu horario coincide</li>
+            <li>Tu decides si puedes ir</li>
+          </ul>
+        </div>
+        <div class="form-card">
+          <form id="registroForm" novalidate>
+            <div class="form-group">
+              <label for="r_nombre">Nombre completo</label>
+              <input type="text" id="r_nombre" name="nombre" placeholder="Ej. Maria Gonzalez" required />
+              <span class="field-error" id="err_r_nombre"></span>
+            </div>
+            <div class="form-group">
+              <label for="r_email">Correo electronico</label>
+              <input type="email" id="r_email" name="email" placeholder="tu@correo.com" required />
+              <span class="field-error" id="err_r_email"></span>
+            </div>
+            <div class="form-group">
+              <label>En que horarios puedes ayudar?</label>
+              <p class="field-hint">Puedes agregar varios rangos. Ej: 2:00 PM a 6:00 PM y 10:00 PM a 2:00 AM</p>
+              <div id="rangosContainer"></div>
+              <button type="button" class="btn-add-rango" onclick="agregarRango()">
+                + Agregar otro horario
+              </button>
+              <span class="field-error" id="err_rangos"></span>
+            </div>
+            <div class="form-group">
+              <label for="r_habilidades">Que puedes hacer? <span class="optional">(opcional)</span></label>
+              <input type="text" id="r_habilidades" name="habilidades"
+                placeholder="Ej. primeros auxilios, cocina, transporte…" />
+            </div>
+            <button type="submit" class="btn btn--primary btn--full" id="btnRegistro">
+              <span class="btn-text">Registrarme como voluntario</span>
+              <span class="btn-spinner hidden">⟳</span>
+            </button>
+          </form>
+          <div class="success-message hidden" id="registroSuccess">
+            <div class="success-icon">✓</div>
+            <h3>Registrado!</h3>
+            <p>Gracias por querer ayudar. Te avisaremos cuando haya una necesidad en tu horario.</p>
+            <button class="btn btn--ghost btn--sm" onclick="resetRegistro()">Registrar otra persona</button>
+          </div>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <!-- VIEW 3 — NECESITO VOLUNTARIOS -->
+  <main id="view-vacante" class="view">
+    <section class="section">
+      <div class="container form-container">
+        <div class="form-sidebar">
+          <p class="section-eyebrow">Publicar necesidad</p>
+          <h2 class="section-title">Necesitas voluntarios?</h2>
+          <p class="section-desc">Selecciona el lugar e indica a que hora necesitas ayuda. El sistema avisa automaticamente a todos los voluntarios disponibles en ese horario.</p>
+          <div class="flow-steps">
+            <div class="flow-step"><span class="step-num">1</span><span>Elige el refugio o institucion</span></div>
+            <div class="flow-step"><span class="step-num">2</span><span>Indica a que hora se necesita ayuda</span></div>
+            <div class="flow-step"><span class="step-num">3</span><span>Los voluntarios disponibles reciben un correo al instante</span></div>
+          </div>
+        </div>
+        <div class="form-card">
+          <form id="vacanteForm" novalidate>
+            <div class="form-group">
+              <label for="v_institucion">En que lugar se necesitan voluntarios?</label>
+              <div class="select-wrap">
+                <select id="v_institucion" name="institucion" required onchange="onInstitucionChange()">
+                  <option value="">— Cargando lugares… —</option>
+                </select>
+                <span class="select-arrow">▾</span>
+              </div>
+              <span class="field-error" id="err_v_institucion"></span>
+            </div>
+
+            <div class="lugar-info hidden" id="lugarInfo">
+              <p class="lugar-info-label">Direccion</p>
+              <p class="lugar-info-value" id="lugarDireccion"></p>
+            </div>
+
+            <div class="form-group">
+              <label>A que hora se necesitan?</label>
+              <p class="field-hint">Los voluntarios disponibles en ese horario recibiran el aviso.</p>
+              <div class="cuando-options">
+                <label class="cuando-option">
+                  <input type="radio" name="cuando_tipo" value="ahora" checked onchange="onCuandoChange()" />
+                  <span>Ya mismo</span>
+                </label>
+                <label class="cuando-option">
+                  <input type="radio" name="cuando_tipo" value="hora" onchange="onCuandoChange()" />
+                  <span>A una hora especifica</span>
+                </label>
+              </div>
+              <div class="hora-input hidden" id="horaInput">
+                <label class="hora-label">A que hora?</label>
+                <div class="rango-item" style="margin-bottom:0">
+                  <div class="rango-selects">
+                    <select class="rango-select-hora" id="v_hora_h" onchange="updatePreview()">
+                      <option value="1">1:00</option><option value="2">2:00</option>
+                      <option value="3">3:00</option><option value="4">4:00</option>
+                      <option value="5">5:00</option><option value="6">6:00</option>
+                      <option value="7">7:00</option><option value="8">8:00</option>
+                      <option value="9">9:00</option><option value="10">10:00</option>
+                      <option value="11">11:00</option><option value="12" selected>12:00</option>
+                    </select>
+                    <select class="rango-select-ampm" id="v_hora_ampm" onchange="updatePreview()">
+                      <option value="AM">AM</option>
+                      <option value="PM" selected>PM</option>
+                    </select>
+                  </div>
+                </div>
+              </div>
+              <span class="field-error" id="err_cuando"></span>
+            </div>
+
+            <div class="form-group">
+              <label for="v_descripcion">Que tipo de ayuda necesitas? <span class="optional">(opcional)</span></label>
+              <textarea id="v_descripcion" name="descripcion" rows="3"
+                placeholder="Ej. Repartir agua y alimentos, registrar damnificados…"></textarea>
+            </div>
+
+            <div class="notify-preview">
+              <p class="notify-label">Correo que recibiran los voluntarios:</p>
+              <p class="notify-text" id="notifyText">
+                <em>Selecciona un lugar para ver la vista previa…</em>
+              </p>
+            </div>
+
+            <button type="submit" class="btn btn--primary btn--full" id="btnVacante">
+              <span class="btn-text">Avisar a voluntarios</span>
+              <span class="btn-spinner hidden">⟳</span>
+            </button>
+          </form>
+          <div class="success-message hidden" id="vacanteSuccess">
+            <div class="success-icon notify-icon">✉</div>
+            <h3>Aviso enviado!</h3>
+            <p id="vacanteSuccessMsg">Los voluntarios han sido notificados por correo.</p>
+            <button class="btn btn--ghost btn--sm" onclick="resetVacante()">Publicar otra necesidad</button>
+          </div>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <!-- FOOTER -->
+  <footer class="site-footer">
+    <div class="container footer-inner">
+      <p class="footer-logo">Althea Tech Solutions</p>
+      <p class="footer-copy">Ante la emergencia del terremoto · 2026</p>
+    </div>
+  </footer>
+
+  <div class="toast" id="toast"></div>
+  <script src="app.js"></script>
+</body>
+</html>
