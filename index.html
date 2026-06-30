@@ -16,7 +16,7 @@
     <div class="container header-inner">
       <a href="#" class="logo" onclick="showView('refugios')">Red Voluntarios VE</a>
       <nav class="main-nav" id="mainNav">
-        <button class="nav-btn active"          onclick="showView('refugios')">Ver instituciones y edificos</button>
+        <button class="nav-btn active"          onclick="showView('refugios')">Ver instituuciones o edificios</button>
         <button class="nav-btn"                 onclick="showView('registro')">Soy voluntario</button>
         <button class="nav-btn nav-btn--accent" onclick="showView('vacante')">Necesito voluntarios</button>
       </nav>
@@ -49,7 +49,7 @@
         <div class="stat-divider"></div>
         <div class="stat-card">
           <span class="stat-num" id="contadorInstituciones">—</span>
-          <span class="stat-label">Refugios activos</span>
+          <span class="stat-label">Insituciones y edificos activos</span>
         </div>
       </div>
     </div>
@@ -62,7 +62,7 @@
       <div class="container">
         <div class="section-header">
           <p class="section-eyebrow">Directorio</p>
-          <h2 class="section-title">Instituciones y centros de ayuda activos</h2>
+          <h2 class="section-title">Instituciones y edificos activos</h2>
           <p class="section-desc">Lugares verificados donde se esta ayudando a personas afectadas y a edificios que se cayeron.</p>
         </div>
         <div class="filter-bar">
@@ -147,7 +147,7 @@
           <h2 class="section-title">Necesitas voluntarios?</h2>
           <p class="section-desc">Selecciona el lugar e indica a que hora necesitas ayuda. El sistema avisa automaticamente a todos los voluntarios disponibles en ese horario.</p>
           <div class="flow-steps">
-            <div class="flow-step"><span class="step-num">1</span><span>Elige la institucion o edifico</span></div>
+            <div class="flow-step"><span class="step-num">1</span><span>Elige la institucion o edificio</span></div>
             <div class="flow-step"><span class="step-num">2</span><span>Indica a que hora se necesita ayuda</span></div>
             <div class="flow-step"><span class="step-num">3</span><span>Los voluntarios disponibles reciben un correo al instante</span></div>
           </div>
@@ -184,6 +184,8 @@
                 </label>
               </div>
               <div class="hora-input hidden" id="horaInput">
+                <label class="hora-label">Que dia?</label>
+                <input type="date" id="v_fecha" class="rango-fecha" onchange="updatePreview()" style="margin-bottom:12px;" />
                 <label class="hora-label">A que hora?</label>
                 <div class="rango-item" style="margin-bottom:0">
                   <div class="rango-selects">
