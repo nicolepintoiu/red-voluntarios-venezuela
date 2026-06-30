@@ -125,25 +125,17 @@ function opcionesHora() {
   return html;
 }
 
-const DIAS_SEMANA = ['Lunes', 'Martes', 'Miercoles', 'Jueves', 'Viernes', 'Sabado', 'Domingo'];
-
-function agregarRango(diasSeleccionados = [], desdeH='2', desdeAmpm='PM', hastaH='6', hastaAmpm='PM') {
+function agregarRango(fecha = '', desdeH='2', desdeAmpm='PM', hastaH='6', hastaAmpm='PM') {
   const container = document.getElementById('rangosContainer');
   const id        = Date.now() + Math.floor(Math.random()*1000);
   const div       = document.createElement('div');
   div.className   = 'rango-block';
   div.id          = 'rango-' + id;
 
-  const diasHtml = DIAS_SEMANA.map(dia => `
-    <label class="dia-chip">
-      <input type="checkbox" class="dia-checkbox" value="${dia}" ${diasSeleccionados.includes(dia) ? 'checked' : ''} />
-      <span>${dia.slice(0,3)}</span>
-    </label>
-  `).join('');
-
   div.innerHTML = `
-    <p class="dias-label">Dias</p>
-    <div class="dias-grid">${diasHtml}</div>
+    <p class="dias-label">Fecha</p>
+    <input type="date" class="rango-fecha" />
+    <p class="dias-label" style="margin-top:10px;">Horario</p>
     <div class="rango-block-hora">
       <select class="rango-select-hora rango-desde-h">${opcionesHora()}</select>
       <select class="rango-select-ampm rango-desde-ampm">
@@ -158,6 +150,7 @@ function agregarRango(diasSeleccionados = [], desdeH='2', desdeAmpm='PM', hastaH
     <span class="rango-block-delete" onclick="eliminarRango('rango-${id}')">Eliminar este horario ✕</span>`;
 
   container.appendChild(div);
+  if (fecha) div.querySelector('.rango-fecha').value = fecha;
   div.querySelector('.rango-desde-h').value    = desdeH;
   div.querySelector('.rango-desde-ampm').value = desdeAmpm;
   div.querySelector('.rango-hasta-h').value    = hastaH;
@@ -181,21 +174,28 @@ function getRangos() {
   const items  = document.querySelectorAll('.rango-block');
   const rangos = [];
   items.forEach(item => {
-    const dias = Array.from(item.querySelectorAll('.dia-checkbox:checked')).map(c => c.value);
+    const fechaInput = item.querySelector('.rango-fecha');
     const desdeH    = item.querySelector('.rango-desde-h');
     const desdeAmpm = item.querySelector('.rango-desde-ampm');
     const hastaH    = item.querySelector('.rango-hasta-h');
     const hastaAmpm = item.querySelector('.rango-hasta-ampm');
-    if (!desdeH || !desdeAmpm || !hastaH || !hastaAmpm) return;
-    if (!dias.length) return; // sin dias seleccionados, se ignora este bloque
+    if (!fechaInput || !desdeH || !desdeAmpm || !hastaH || !hastaAmpm) return;
+    if (!fechaInput.value) return; // sin fecha seleccionada, se ignora este bloque
+    const fechaDisplay = formatearFecha(fechaInput.value);
     rangos.push({
-      dias: dias,
+      fecha: fechaInput.value, // formato YYYY-MM-DD
       desde: a24h(desdeH.value, desdeAmpm.value),
       hasta: a24h(hastaH.value, hastaAmpm.value),
-      texto: `${dias.join(', ')}: ${desdeH.value}:00 ${desdeAmpm.value} - ${hastaH.value}:00 ${hastaAmpm.value}`,
+      texto: `${fechaDisplay}: ${desdeH.value}:00 ${desdeAmpm.value} - ${hastaH.value}:00 ${hastaAmpm.value}`,
     });
   });
   return rangos;
+}
+
+function formatearFecha(fechaISO) {
+  // fechaISO: "2026-06-29" -> "29/06/2026"
+  const [y, m, d] = fechaISO.split('-');
+  return `${d}/${m}/${y}`;
 }
 
 // ══════════════════════════════════════════════
@@ -209,7 +209,7 @@ document.getElementById('registroForm').addEventListener('submit', async (e) => 
 
   const rangos = getRangos();
   if (!rangos.length) {
-    document.getElementById('err_rangos').textContent = 'Agrega al menos un horario con sus dias.';
+    document.getElementById('err_rangos').textContent = 'Agrega al menos una fecha con su horario.';
     return;
   }
   document.getElementById('err_rangos').textContent = '';
@@ -225,7 +225,7 @@ document.getElementById('registroForm').addEventListener('submit', async (e) => 
   try {
     await submitData('registrarVoluntario', data);
     showSuccess('registroForm', 'registroSuccess');
-    showToast('Registrado correctamente.');
+    showToast('Tus horarios fueron guardados correctamente.');
     cargarContadores(); // actualizar contadores
   } catch (err) {
     console.error(err);
