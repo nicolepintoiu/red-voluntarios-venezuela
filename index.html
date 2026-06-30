@@ -16,7 +16,7 @@
     <div class="container header-inner">
       <a href="#" class="logo" onclick="showView('refugios')">Red Voluntarios VE</a>
       <nav class="main-nav" id="mainNav">
-        <button class="nav-btn active"          onclick="showView('refugios')">Ver instituciones</button>
+        <button class="nav-btn active"          onclick="showView('refugios')">Ver refugios</button>
         <button class="nav-btn"                 onclick="showView('registro')">Soy voluntario</button>
         <button class="nav-btn nav-btn--accent" onclick="showView('vacante')">Necesito voluntarios</button>
       </nav>
@@ -28,6 +28,7 @@
 
   <!-- BANNER -->
   <div class="emergency-banner">
+    Emergencia activa — Terremoto en Venezuela. Si estas en peligro llama al <strong>911</strong>
   </div>
 
   <!-- HERO -->
@@ -49,7 +50,7 @@
         <div class="stat-divider"></div>
         <div class="stat-card">
           <span class="stat-num" id="contadorInstituciones">—</span>
-          <span class="stat-label">Instituciones activas</span>
+          <span class="stat-label">Refugios activos</span>
         </div>
       </div>
     </div>
@@ -62,7 +63,7 @@
       <div class="container">
         <div class="section-header">
           <p class="section-eyebrow">Directorio</p>
-          <h2 class="section-title">Centros de ayuda activos</h2>
+          <h2 class="section-title">Refugios y centros de ayuda activos</h2>
           <p class="section-desc">Lugares verificados donde se esta ayudando a personas afectadas y a edificios que se cayeron.</p>
         </div>
         <div class="filter-bar">
@@ -109,8 +110,8 @@
               <span class="field-error" id="err_r_email"></span>
             </div>
             <div class="form-group">
-              <label>En que horarios puedes ayudar?</label>
-              <p class="field-hint">Puedes agregar varios rangos. Ej: 2:00 PM a 6:00 PM y 10:00 PM a 2:00 AM</p>
+              <label>En que dias y horarios puedes ayudar?</label>
+              <p class="field-hint">Marca los dias y el rango de hora. Puedes agregar varios horarios.</p>
               <div id="rangosContainer"></div>
               <button type="button" class="btn-add-rango" onclick="agregarRango()">
                 + Agregar otro horario
@@ -237,8 +238,8 @@
   <!-- FOOTER -->
   <footer class="site-footer">
     <div class="container footer-inner">
-      <p class="footer-logo">Althea Tech Solutions</p>
-      <p class="footer-copy">Ante la emergencia del terremoto · 2026</p>
+      <p class="footer-logo">Red Voluntarios Venezuela</p>
+      <p class="footer-copy">Ante la emergencia del terremoto · 2025</p>
     </div>
   </footer>
 
