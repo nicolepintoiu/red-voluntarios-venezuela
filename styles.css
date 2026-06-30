@@ -251,3 +251,17 @@ input, select, textarea { font-family: inherit; }
   transition: color var(--ease);
 }
 .rango-block-delete:hover { color: #CC1F1F; }
+
+/* FECHA EN RANGO BLOCK */
+.rango-fecha {
+  width: 100%;
+  padding: 10px 13px;
+  border: 1.5px solid var(--border);
+  border-radius: var(--radius-sm);
+  font-size: .9rem;
+  color: var(--ink);
+  background: var(--white);
+  outline: none;
+  transition: border-color var(--ease);
+}
+.rango-fecha:focus { border-color: var(--azul-mid); box-shadow: 0 0 0 3px rgba(35,86,168,.12); }
