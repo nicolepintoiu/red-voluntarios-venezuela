@@ -68,6 +68,16 @@ function closeMobileNav() {
   hamburger.classList.remove('open');
 }
 
+function toggleInstitucionesInfo() {
+  const panel = document.getElementById('institucionesInfo');
+  const btn = document.getElementById('btnInstituciones');
+  if (!panel || !btn) return;
+  panel.classList.toggle('hidden');
+  const isOpen = !panel.classList.contains('hidden');
+  btn.setAttribute('aria-expanded', String(isOpen));
+  if (isOpen) panel.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+}
+
 // ══════════════════════════════════════════════
 //  CONTADORES
 // ══════════════════════════════════════════════
