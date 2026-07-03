@@ -50,7 +50,7 @@ function showView(name) {
   document.getElementById('view-' + name).classList.add('active');
   document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active'));
   const btns = document.querySelectorAll('.nav-btn');
-  const idx  = { refugios:0, registro:1, vacante:2 };
+  const idx  = { refugios:0, registro:1, vacante:2, agregar:3 };
   if (btns[idx[name]]) btns[idx[name]].classList.add('active');
   closeMobileNav();
   window.scrollTo({ top: 0, behavior: 'smooth' });
@@ -66,15 +66,6 @@ hamburger.addEventListener('click', () => {
 function closeMobileNav() {
   document.body.classList.remove('mobile-nav-open');
   hamburger.classList.remove('open');
-}
-
-function toggleInstitucionesInfo() {
-  const panel = document.getElementById('institucionesInfo');
-  const btn = document.getElementById('btnInstituciones');
-  const open = panel.classList.toggle('hidden');
-  const isOpen = !open;
-  btn.setAttribute('aria-expanded', String(isOpen));
-  if (isOpen) panel.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
 }
 
 // ══════════════════════════════════════════════

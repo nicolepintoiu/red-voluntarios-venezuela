@@ -19,6 +19,7 @@
         <button class="nav-btn active"          onclick="showView('refugios')">Ver instituciones o edificios</button>
         <button class="nav-btn"                 onclick="showView('registro')">Soy voluntario</button>
         <button class="nav-btn nav-btn--accent" onclick="showView('vacante')">Necesito voluntarios</button>
+        <button class="nav-btn"                 onclick="showView('agregar')">Agregar institución</button>
       </nav>
       <button class="hamburger" id="hamburger" aria-label="Abrir menu">
         <span></span><span></span><span></span>
@@ -253,31 +254,36 @@
     </section>
   </main>
 
-  <!-- INSTITUCIONES — CONTACTO -->
-  <section class="institutions-cta">
-    <div class="container institutions-cta-inner">
-      <button type="button" class="btn btn--institutions" id="btnInstituciones" onclick="toggleInstitucionesInfo()" aria-expanded="false" aria-controls="institucionesInfo">
-        Instituciones interesadas en formar parte de la plataforma
-      </button>
-      <div class="institutions-info hidden" id="institucionesInfo">
-        <p class="institutions-info-title">Contacto para instituciones</p>
-        <p class="institutions-info-text">
-          Instituciones que estén interesadas en formar parte de la plataforma, comuníquense a:
-        </p>
-        <ul class="institutions-contact-list">
-          <li>
-            <a href="mailto:techsolutionsalthea@gmail.com">techsolutionsalthea@gmail.com</a>
-          </li>
-          <li>
-            <a href="https://wa.me/584241668886" target="_blank" rel="noopener noreferrer">WhatsApp 0424 166 8886</a>
-          </li>
-          <li>
-            <a href="https://wa.me/584241988493" target="_blank" rel="noopener noreferrer">WhatsApp 0424 198 8493</a>
-          </li>
-        </ul>
+  <!-- VIEW 4 — AGREGAR INSTITUCION -->
+  <main id="view-agregar" class="view">
+    <section class="section">
+      <div class="container">
+        <div class="section-header">
+          <p class="section-eyebrow">Instituciones</p>
+          <h2 class="section-title">Agregar institución</h2>
+        </div>
+        <div class="institutions-page-card">
+          <p class="institutions-page-text">
+            Instituciones que estén interesadas en formar parte de la plataforma, comunicarse:
+          </p>
+          <ul class="institutions-contact-list">
+            <li>
+              <span class="institutions-contact-label">Correo:</span>
+              <a href="mailto:techsolutionsalthea@gmail.com">techsolutionsalthea@gmail.com</a>
+            </li>
+            <li>
+              <span class="institutions-contact-label">WhatsApp:</span>
+              <a href="https://wa.me/584241668886" target="_blank" rel="noopener noreferrer">+58 4241668886</a>
+            </li>
+            <li>
+              <span class="institutions-contact-label">WhatsApp:</span>
+              <a href="https://wa.me/584241988493" target="_blank" rel="noopener noreferrer">+58 4241988493</a>
+            </li>
+          </ul>
+        </div>
       </div>
-    </div>
-  </section>
+    </section>
+  </main>
 
   <!-- FOOTER -->
   <footer class="site-footer">

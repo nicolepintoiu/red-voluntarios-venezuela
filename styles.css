@@ -183,65 +183,49 @@ input, select, textarea { font-family: inherit; }
 .footer-logo {  font-size: .95rem; color: var(--white); }
 .footer-copy { font-size: .76rem; color: rgba(255,255,255,.4); }
 
-/* INSTITUCIONES — CONTACTO */
-.institutions-cta {
+/* INSTITUCIONES — AGREGAR */
+.institutions-page-card {
+  max-width: 560px;
+  margin: 0 auto;
   background: var(--white);
-  border-top: 1px solid var(--border);
-  border-bottom: 1px solid var(--border);
-  padding: 28px 0;
-}
-.institutions-cta-inner {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 16px;
-  text-align: center;
-}
-.btn--institutions {
-  background: var(--azul);
-  color: var(--white);
-  padding: 12px 24px;
-  max-width: 100%;
-  white-space: normal;
-  line-height: 1.4;
-}
-.btn--institutions:hover {
-  background: var(--azul-mid);
-  transform: translateY(-1px);
-  box-shadow: 0 4px 12px rgba(26,58,107,.25);
-}
-.institutions-info {
-  width: 100%;
-  max-width: 520px;
-  background: var(--azul-light);
   border: 1px solid var(--border);
-  border-radius: var(--radius-md);
-  padding: 20px 22px;
-  text-align: left;
+  border-radius: var(--radius-lg);
+  padding: 28px 26px;
+  box-shadow: var(--shadow-md);
 }
-.institutions-info-title {
-  font-size: .95rem;
-  font-weight: 700;
-  color: var(--azul);
-  margin-bottom: 8px;
-}
-.institutions-info-text {
-  font-size: .9rem;
+.institutions-page-text {
+  font-size: 1rem;
   color: var(--stone);
-  margin-bottom: 14px;
-  line-height: 1.5;
+  line-height: 1.6;
+  margin-bottom: 20px;
 }
 .institutions-contact-list {
   list-style: none;
   display: flex;
   flex-direction: column;
-  gap: 10px;
+  gap: 14px;
+}
+.institutions-contact-list li {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: 14px 16px;
+  background: var(--azul-light);
+  border-radius: var(--radius-sm);
+}
+.institutions-contact-label {
+  font-size: .78rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: .06em;
+  color: var(--azul);
 }
 .institutions-contact-list a {
   color: var(--azul-mid);
   font-weight: 600;
   text-decoration: none;
-  font-size: .95rem;
+  font-size: 1rem;
+  word-break: break-word;
 }
 .institutions-contact-list a:hover {
   color: var(--naranja);
