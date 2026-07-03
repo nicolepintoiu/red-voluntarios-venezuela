@@ -99,10 +99,12 @@ function setup() {
   let hVac = ss.getSheetByName('Vacantes');
   if (!hVac) {
     hVac = ss.insertSheet('Vacantes');
-    hVac.getRange(1,1,1,7)
-      .setValues([['Lugar','Direccion','Cuando','Descripcion','Contacto','Fecha_Necesidad','Fecha_Publicacion']])
+    hVac.getRange(1,1,1,8)
+      .setValues([['Lugar','Direccion','Cuando','Descripcion','Habilidad','Contacto','Fecha_Necesidad','Fecha_Publicacion']])
       .setFontWeight('bold');
     hVac.setFrozenRows(1);
+  } else {
+    asegurarColumnaHabilidad(hVac);
   }
 
   Logger.log('Setup completado correctamente.');
@@ -171,6 +173,48 @@ function convertir24aAmPm(hora24) {
   if (h > 12) h -= 12;
   if (h === 0) h = 12;
   return h + ':00 ' + ampm;
+}
+
+// ══════════════════════════════════════════════
+//  FILTRO DE HABILIDADES
+// ══════════════════════════════════════════════
+
+function parseHabilidades(str) {
+  if (!str || !String(str).trim()) return [];
+  return String(str)
+    .toLowerCase()
+    .normalize('NFD').replace(/[\u0300-\u036f]/g, '')
+    .split(/[,;|/]+/)
+    .map(s => s.trim())
+    .filter(Boolean);
+}
+
+function habilidadesCoinciden(habilidadVacante, habilidadesVoluntario) {
+  const requeridas = parseHabilidades(habilidadVacante);
+  const ofrecidas  = parseHabilidades(habilidadesVoluntario);
+
+  // Vacante sin habilidad → solo voluntarios sin habilidad
+  if (!requeridas.length) return !ofrecidas.length;
+
+  // Vacante con habilidad → voluntario debe tener al menos una que coincida
+  if (!ofrecidas.length) return false;
+
+  return requeridas.some(req =>
+    ofrecidas.some(of => of === req || of.indexOf(req) >= 0 || req.indexOf(of) >= 0)
+  );
+}
+
+function asegurarColumnaHabilidad(hVac) {
+  const headers = hVac.getRange(1, 1, 1, Math.max(1, hVac.getLastColumn())).getValues()[0];
+  if (headers.indexOf('Habilidad') >= 0) return;
+
+  const descIdx = headers.indexOf('Descripcion');
+  if (descIdx >= 0) {
+    hVac.insertColumnAfter(descIdx + 1);
+    hVac.getRange(1, descIdx + 2).setValue('Habilidad').setFontWeight('bold');
+  } else {
+    hVac.getRange(1, headers.length + 1).setValue('Habilidad').setFontWeight('bold');
+  }
 }
 
 // ══════════════════════════════════════════════
@@ -309,6 +353,7 @@ function registrarVacante(data) {
   try {
     const ss   = SpreadsheetApp.openById(SHEET_ID);
     const hVac = ss.getSheetByName('Vacantes');
+    asegurarColumnaHabilidad(hVac);
 
     const fechaVacante = data.fecha || fechaHoyVenezuela();
 
@@ -317,12 +362,16 @@ function registrarVacante(data) {
       data.direccion,
       data.cuando,
       data.descripcion || '',
-      data.contacto    || '',
+      data.habilidad    || '',
+      data.contacto     || '',
       fechaVacante,
       new Date().toISOString(),
     ]);
 
-    notificarVoluntarios(ss, data.lugar, data.direccion, data.cuando, fechaVacante, data.contacto);
+    notificarVoluntarios(
+      ss, data.lugar, data.direccion, data.cuando, fechaVacante,
+      data.contacto, data.habilidad || '', data.descripcion || ''
+    );
 
     return { success: true };
   } catch(err) {
@@ -330,13 +379,14 @@ function registrarVacante(data) {
   }
 }
 
-function notificarVoluntarios(ss, lugar, direccion, cuando, fechaVacante, contacto) {
+function notificarVoluntarios(ss, lugar, direccion, cuando, fechaVacante, contacto, habilidadRequerida, descripcion) {
   const hVol    = ss.getSheetByName('Voluntarios');
   const datos   = hVol.getDataRange().getValues();
   const headers = datos[0];
-  const iNombre  = headers.indexOf('Nombre');
-  const iCorreo  = headers.indexOf('Correo');
-  const iRangos  = headers.indexOf('Rangos_Horario');
+  const iNombre      = headers.indexOf('Nombre');
+  const iCorreo      = headers.indexOf('Correo');
+  const iRangos      = headers.indexOf('Rangos_Horario');
+  const iHabilidades = headers.indexOf('Habilidades');
 
   const esAhora = cuando === 'AHORA MISMO';
   const minutosSolicitados = esAhora ? horaActualVenezuelaEnMinutos() : horaAMinutos(cuando);
@@ -344,6 +394,10 @@ function notificarVoluntarios(ss, lugar, direccion, cuando, fechaVacante, contac
 
   const compatibles = datos.slice(1).filter(fila => {
     if (!fila[iCorreo]) return false;
+
+    const habVol = iHabilidades >= 0 ? (fila[iHabilidades] || '') : '';
+    if (!habilidadesCoinciden(habilidadRequerida, habVol)) return false;
+
     try {
       const rangos = JSON.parse(fila[iRangos] || '[]');
       return rangos.some(r => {
@@ -354,6 +408,10 @@ function notificarVoluntarios(ss, lugar, direccion, cuando, fechaVacante, contac
     } catch { return false; }
   });
 
+  const habilidadTexto = habilidadRequerida
+    ? ' con habilidad "' + habilidadRequerida + '"'
+    : ' (sin habilidad especifica)';
+
   if (!compatibles.length) {
     enviarCorreoBrevo(
       CORREO_ADMIN,
@@ -361,11 +419,13 @@ function notificarVoluntarios(ss, lugar, direccion, cuando, fechaVacante, contac
       'Sin voluntarios disponibles para: ' + lugar,
       '<p>Se publico una necesidad en <strong>' + e(lugar) + '</strong> para ' +
         (esAhora ? 'AHORA MISMO' : e(convertir24aAmPm(cuando))) +
-        ' (' + e(fechaSolicitada) + '), pero ningun voluntario tiene esa fecha y horario disponible.</p>',
+        ' (' + e(fechaSolicitada) + ')' + e(habilidadTexto) +
+        ', pero ningun voluntario coincide con fecha, horario y habilidad.</p>',
       'Se publico una necesidad en ' + lugar + ' para ' + (esAhora ? 'AHORA MISMO' : cuando) +
-        ' (' + fechaSolicitada + '), pero ningun voluntario tiene esa fecha y horario disponible.'
+        ' (' + fechaSolicitada + ')' + habilidadTexto +
+        ', pero ningun voluntario coincide.'
     );
-    Logger.log('Sin voluntarios para "' + cuando + '" (' + fechaSolicitada + ') en ' + lugar);
+    Logger.log('Sin voluntarios para "' + cuando + '" (' + fechaSolicitada + ') en ' + lugar + habilidadTexto);
     return;
   }
 
@@ -378,9 +438,10 @@ function notificarVoluntarios(ss, lugar, direccion, cuando, fechaVacante, contac
         correo,
         nombre,
         'Se necesitan voluntarios en ' + lugar + ' — ' + (esAhora ? 'AHORA MISMO' : convertir24aAmPm(cuando)),
-        emailNotificacion(nombre, lugar, direccion, cuando, fechaSolicitada, contacto),
+        emailNotificacion(nombre, lugar, direccion, cuando, fechaSolicitada, contacto, habilidadRequerida, descripcion),
         'Hola ' + nombre + '. Se necesitan voluntarios en ' + lugar + ', ' + direccion +
           '. Hora: ' + (esAhora ? 'AHORA MISMO' : convertir24aAmPm(cuando)) +
+          (habilidadRequerida ? '. Habilidad: ' + habilidadRequerida : '') +
           (contacto ? '. Contacto: ' + contacto : '')
       );
       enviados++;
@@ -389,14 +450,14 @@ function notificarVoluntarios(ss, lugar, direccion, cuando, fechaVacante, contac
     }
   });
 
-  Logger.log(lugar + ' (' + cuando + ', ' + fechaSolicitada + ') — ' + enviados + ' voluntario(s) notificados.');
+  Logger.log(lugar + ' (' + cuando + ', ' + fechaSolicitada + ')' + habilidadTexto + ' — ' + enviados + ' notificados.');
 }
 
 // ══════════════════════════════════════════════
 //  PLANTILLAS DE CORREO
 // ══════════════════════════════════════════════
 
-function emailNotificacion(nombre, lugar, direccion, cuando, fechaISO, contacto) {
+function emailNotificacion(nombre, lugar, direccion, cuando, fechaISO, contacto, habilidad, descripcion) {
   const esAhora = cuando === 'AHORA MISMO';
   const horaDisplay = esAhora ? 'AHORA MISMO' : convertir24aAmPm(cuando);
   const fechaDisplay = fechaISO ? formatearFechaLegible(fechaISO) : '';
@@ -409,13 +470,15 @@ function emailNotificacion(nombre, lugar, direccion, cuando, fechaISO, contacto)
   <div style="background:#ffffff;padding:28px 24px;border:1px solid #C8D8EF;border-radius:0 0 12px 12px;">
     <h2 style="color:#1A3A6B;margin-top:0;">Hola, ${e(nombre)}</h2>
     <p style="color:#4A4A4A;line-height:1.6;">
-      Se necesitan voluntarios y tu horario coincide con esta necesidad:
+      Se necesitan voluntarios y tu horario y habilidad coinciden con esta necesidad:
     </p>
     <div style="background:#FDF0E6;border-left:4px solid #E87A35;border-radius:4px;padding:18px;margin:16px 0;">
       <p style="color:#E87A35;font-weight:700;font-size:18px;margin:0 0 10px;">${e(lugar)}</p>
       <p style="color:#4A4A4A;margin:5px 0;">Direccion: ${e(direccion)}</p>
       ${fechaDisplay ? `<p style="color:#4A4A4A;margin:5px 0;">Dia: <strong>${e(fechaDisplay)}</strong></p>` : ''}
       <p style="color:#4A4A4A;margin:5px 0;">Hora: <strong>${e(horaDisplay)}</strong></p>
+      ${habilidad ? `<p style="color:#4A4A4A;margin:5px 0;">Habilidad: <strong>${e(habilidad)}</strong></p>` : ''}
+      ${descripcion ? `<p style="color:#4A4A4A;margin:5px 0;">Detalle: ${e(descripcion)}</p>` : ''}
       ${contacto ? `<p style="color:#4A4A4A;margin:5px 0;">Contacto: ${e(contacto)}</p>` : ''}
     </div>
     <p style="color:#999999;font-size:12px;margin-top:20px;border-top:1px solid #eeeeee;padding-top:14px;">

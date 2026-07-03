@@ -89,11 +89,11 @@
         <div class="form-sidebar">
           <p class="section-eyebrow">Voluntarios</p>
           <h2 class="section-title">Registrate para ayudar</h2>
-          <p class="section-desc">Indica en que horarios puedes ayudar. Cuando alguien publique una necesidad dentro de tu horario, te avisamos por correo al instante.</p>
+          <p class="section-desc">Indica en que horarios puedes ayudar y que habilidades tienes. Solo te avisamos cuando coinciden fecha, hora y habilidad (si la publicacion la pide).</p>
           <ul class="benefit-list">
             <li>Puedes agregar varios rangos de horario</li>
-            <li>Solo te avisamos cuando tu horario coincide</li>
-            <li>Tu decides si puedes ir</li>
+            <li>Si pusiste habilidad, solo te avisan cuando la necesitan</li>
+            <li>Si no pusiste habilidad, solo te avisan cuando no piden ninguna</li>
           </ul>
         </div>
         <div class="form-card">
@@ -145,11 +145,11 @@
         <div class="form-sidebar">
           <p class="section-eyebrow">Publicar necesidad</p>
           <h2 class="section-title">Necesitas voluntarios?</h2>
-          <p class="section-desc">Selecciona el lugar e indica a que hora necesitas ayuda. El sistema avisa automaticamente a todos los voluntarios disponibles en ese horario.</p>
+          <p class="section-desc">Selecciona el lugar e indica a que hora necesitas ayuda. Si indicas una habilidad, solo se avisa a voluntarios con esa habilidad. Si no indicas habilidad, solo se avisa a quienes no pusieron ninguna.</p>
           <div class="flow-steps">
             <div class="flow-step"><span class="step-num">1</span><span>Elige la institucion o edificio</span></div>
-            <div class="flow-step"><span class="step-num">2</span><span>Indica a que hora se necesita ayuda</span></div>
-            <div class="flow-step"><span class="step-num">3</span><span>Los voluntarios disponibles reciben un correo al instante</span></div>
+            <div class="flow-step"><span class="step-num">2</span><span>Indica fecha, hora y habilidad (opcional)</span></div>
+            <div class="flow-step"><span class="step-num">3</span><span>Solo los voluntarios que coinciden reciben el correo</span></div>
           </div>
         </div>
         <div class="form-card">
@@ -208,7 +208,14 @@
             </div>
 
             <div class="form-group">
-              <label for="v_descripcion">Que tipo de ayuda necesitas? <span class="optional">(opcional)</span></label>
+              <label for="v_habilidad">Que habilidad se necesita? <span class="optional">(opcional)</span></label>
+              <p class="field-hint">Si la indicas, solo reciben aviso voluntarios con esa habilidad en ese horario. Si la dejas vacia, solo avisamos a quienes no pusieron habilidad.</p>
+              <input type="text" id="v_habilidad" name="habilidad"
+                placeholder="Ej. transporte, primeros auxilios, cocina…" oninput="updatePreview()" />
+            </div>
+
+            <div class="form-group">
+              <label for="v_descripcion">Detalle adicional <span class="optional">(opcional)</span></label>
               <textarea id="v_descripcion" name="descripcion" rows="3"
                 placeholder="Ej. Repartir agua y alimentos, registrar damnificados…"></textarea>
             </div>

@@ -315,8 +315,13 @@ function updatePreview() {
     cuando = `el <strong>${fechaTexto}</strong> a las <strong>${getHoraVacante().display}</strong>`;
   }
 
+  const habilidad = document.getElementById('v_habilidad')?.value.trim() || '';
+  const habilidadTexto = habilidad
+    ? ` Habilidad requerida: <strong>${esc(habilidad)}</strong>.`
+    : ' Sin habilidad especifica (solo voluntarios generales).';
+
   document.getElementById('notifyText').innerHTML =
-    `Se necesitan voluntarios en <strong>${esc(lugar)}</strong> ubicado en ${esc(direccion)}, ${cuando}.`;
+    `Se necesitan voluntarios en <strong>${esc(lugar)}</strong> ubicado en ${esc(direccion)}, ${cuando}.${habilidadTexto}`;
 }
 
 document.getElementById('v_institucion').addEventListener('change', updatePreview);
@@ -355,6 +360,7 @@ document.getElementById('vacanteForm').addEventListener('submit', async (e) => {
     direccion:   inst.direccion,
     cuando:      cuando,
     fecha:       fecha,
+    habilidad:   form.habilidad.value.trim(),
     descripcion: form.descripcion.value.trim(),
     contacto:    CORREO_ADMIN,
   };
