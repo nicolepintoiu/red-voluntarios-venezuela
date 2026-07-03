@@ -14,9 +14,9 @@
   <!-- HEADER -->
   <header class="site-header">
     <div class="container header-inner">
-      <a href="#" class="logo" onclick="showView('refugios')">Red Voluntarios VE</a>
+      <a href="#" class="logo" onclick="showHome(); return false;">Red Voluntarios VE</a>
       <nav class="main-nav" id="mainNav">
-        <button class="nav-btn active"          onclick="showView('refugios')">Ver instituciones o edificios</button>
+        <button class="nav-btn" onclick="showView('refugios')">Ver instituciones o edificios</button>
         <button class="nav-btn"                 onclick="showView('registro')">Soy voluntario</button>
         <button class="nav-btn nav-btn--accent" onclick="showView('vacante')">Necesito voluntarios</button>
       </nav>
@@ -57,7 +57,7 @@
   </section>
 
   <!-- VIEW 1 — REFUGIOS -->
-  <main id="view-refugios" class="view active">
+  <main id="view-refugios" class="view">
     <section class="section">
       <div class="container">
         <div class="section-header">

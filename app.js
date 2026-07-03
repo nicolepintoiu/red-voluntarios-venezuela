@@ -16,8 +16,10 @@ const TAREAS = [
   { value: 'transporte', label: 'Transporte' },
   { value: 'organizacion', label: 'Organización' },
   { value: 'seleccion de ropa', label: 'Selección de ropa' },
-  { value: 'entretenimiento para los damnificados', label: 'Entretenimiento para los damnificados' },
+  { value: 'entretenimiento', label: 'Entretenimiento para los damnificados' },
   { value: 'seguridad', label: 'Seguridad' },
+  { value: 'refugios', label: 'Ayudar en refugios' },
+  { value: 'limpiar', label: 'Remover escombros' },
 ];
 
 function opcionesTareaSelect(seleccionada = '') {
@@ -44,6 +46,15 @@ function poblarSelectsTarea() {
 // ══════════════════════════════════════════════
 //  NAVEGACION
 // ══════════════════════════════════════════════
+
+function showHome() {
+  document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
+  document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active'));
+  const hero = document.getElementById('hero');
+  if (hero) hero.classList.remove('hidden');
+  closeMobileNav();
+  window.scrollTo({ top: 0, behavior: 'smooth' });
+}
 
 function showView(name) {
   document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
@@ -501,7 +512,6 @@ function esc(str) {
 document.addEventListener('DOMContentLoaded', () => {
   poblarSelectsTarea();
   agregarRango();
-  loadRefugios();
   cargarContadores();
   updatePreview();
 });

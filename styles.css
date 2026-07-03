@@ -212,6 +212,14 @@ input, select, textarea { font-family: inherit; }
   padding: 28px 26px;
   box-shadow: var(--shadow-md);
 }
+.institutions-page-eyebrow {
+  font-size: .78rem;
+  font-weight: 600;
+  letter-spacing: .1em;
+  text-transform: uppercase;
+  color: var(--naranja);
+  margin-bottom: 8px;
+}
 .institutions-page-text {
   font-size: 1rem;
   color: var(--stone);
