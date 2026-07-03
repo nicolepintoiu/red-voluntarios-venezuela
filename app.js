@@ -68,6 +68,15 @@ function closeMobileNav() {
   hamburger.classList.remove('open');
 }
 
+function toggleInstitucionesInfo() {
+  const panel = document.getElementById('institucionesInfo');
+  const btn = document.getElementById('btnInstituciones');
+  const open = panel.classList.toggle('hidden');
+  const isOpen = !open;
+  btn.setAttribute('aria-expanded', String(isOpen));
+  if (isOpen) panel.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+}
+
 // ══════════════════════════════════════════════
 //  CONTADORES
 // ══════════════════════════════════════════════
