@@ -52,6 +52,8 @@ function showView(name) {
   const btns = document.querySelectorAll('.nav-btn');
   const idx  = { refugios:0, registro:1, vacante:2 };
   if (btns[idx[name]]) btns[idx[name]].classList.add('active');
+  const hero = document.getElementById('hero');
+  if (hero) hero.classList.toggle('hidden', name === 'refugios');
   closeMobileNav();
   window.scrollTo({ top: 0, behavior: 'smooth' });
   if (name === 'refugios') loadRefugios();
@@ -66,16 +68,6 @@ hamburger.addEventListener('click', () => {
 function closeMobileNav() {
   document.body.classList.remove('mobile-nav-open');
   hamburger.classList.remove('open');
-}
-
-function toggleInstitucionesInfo() {
-  const panel = document.getElementById('institucionesInfo');
-  const btn = document.getElementById('btnInstituciones');
-  if (!panel || !btn) return;
-  panel.classList.toggle('hidden');
-  const isOpen = !panel.classList.contains('hidden');
-  btn.setAttribute('aria-expanded', String(isOpen));
-  if (isOpen) panel.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
 }
 
 // ══════════════════════════════════════════════

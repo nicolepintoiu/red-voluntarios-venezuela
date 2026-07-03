@@ -188,6 +188,8 @@ const TAREAS_VALIDAS = {
   'seleccion de ropa': 'Selección de ropa',
   'entretenimiento para los damnificados': 'Entretenimiento para los damnificados',
   'seguridad': 'Seguridad',
+  'ayuda en los refugios': 'ayuda en los refugios',
+  'remover escombros': 'remover escombros'
 };
 
 function indiceColumna(headers, nombres, fallback) {
