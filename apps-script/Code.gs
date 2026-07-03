@@ -211,9 +211,12 @@ function tareaVoluntario(str) {
   return normalizarTarea(str);
 }
 
-function etiquetaTarea(valor) {
-  const key = normalizarTarea(valor);
-  return key ? TAREAS_VALIDAS[key] : (valor || '');
+function textoTareaRegistro(tarea) {
+  return tarea ? etiquetaTarea(tarea) : 'No seleccionaste ninguna tarea';
+}
+
+function textoTareaVacante(tarea) {
+  return tarea ? etiquetaTarea(tarea) : 'Sin tarea específica (ayuda general)';
 }
 
 function tareasCoinciden(tareaVacante, tareaVoluntario) {
@@ -355,7 +358,9 @@ function registrarVoluntario(data) {
       .map(r => r.texto || (convertir24aAmPm(r.desde) + ' - ' + convertir24aAmPm(r.hasta)))
       .join(' | ');
 
-    const tareaGuardada = tareaVoluntario(data.tareas || data.habilidades || '');
+    const tareaForm = tareaVoluntario(data.tareas || data.habilidades || '');
+    const tareaGuardada = tareaForm || (filaExistente > 0 ? normalizarTarea(datos[filaExistente][3]) : '');
+    const tareaCorreo = textoTareaRegistro(tareaGuardada);
 
     enviarCorreoBrevo(
       data.email,
@@ -367,7 +372,7 @@ function registrarVoluntario(data) {
       'Hola ' + data.nombre + '. ' +
         (esActualizacion ? 'Agregamos tu nuevo horario.' : 'Gracias por registrarte.') +
         ' Tus horarios actuales: ' + rangosTexto +
-        (tareaGuardada ? '. Tu tarea: ' + etiquetaTarea(tareaGuardada) + '.' : '') +
+        '. Tu tarea: ' + tareaCorreo + '.' +
         ' Te avisaremos cuando haya una necesidad que coincida.'
     );
 
@@ -475,7 +480,7 @@ function notificarVoluntarios(ss, lugar, direccion, cuando, fechaVacante, contac
         emailNotificacion(nombre, lugar, direccion, cuando, fechaSolicitada, contacto, tareaReq, descripcion),
         'Hola ' + nombre + '. Se necesitan voluntarios en ' + lugar + ', ' + direccion +
           '. Hora: ' + (esAhora ? 'AHORA MISMO' : convertir24aAmPm(cuando)) +
-          (tareaReq ? '. Tarea: ' + etiquetaTarea(tareaReq) : '') +
+          '. Tarea: ' + textoTareaVacante(tareaReq) +
           (contacto ? '. Contacto: ' + contacto : '')
       );
       enviados++;
@@ -495,7 +500,7 @@ function emailNotificacion(nombre, lugar, direccion, cuando, fechaISO, contacto,
   const esAhora = cuando === 'AHORA MISMO';
   const horaDisplay = esAhora ? 'AHORA MISMO' : convertir24aAmPm(cuando);
   const fechaDisplay = fechaISO ? formatearFechaLegible(fechaISO) : '';
-  const tareaDisplay = tarea ? etiquetaTarea(tarea) : '';
+  const tareaDisplay = textoTareaVacante(tarea);
   return `
 <div style="font-family:Arial,sans-serif;max-width:540px;margin:0 auto;">
   <div style="background:#1A3A6B;padding:24px;border-radius:12px 12px 0 0;text-align:center;">
@@ -512,7 +517,7 @@ function emailNotificacion(nombre, lugar, direccion, cuando, fechaISO, contacto,
       <p style="color:#4A4A4A;margin:5px 0;">Direccion: ${e(direccion)}</p>
       ${fechaDisplay ? `<p style="color:#4A4A4A;margin:5px 0;">Dia: <strong>${e(fechaDisplay)}</strong></p>` : ''}
       <p style="color:#4A4A4A;margin:5px 0;">Hora: <strong>${e(horaDisplay)}</strong></p>
-      ${tareaDisplay ? `<p style="color:#4A4A4A;margin:5px 0;">Tarea: <strong>${e(tareaDisplay)}</strong></p>` : ''}
+      <p style="color:#4A4A4A;margin:5px 0;">Tarea: <strong>${e(tareaDisplay)}</strong></p>
       ${descripcion ? `<p style="color:#4A4A4A;margin:5px 0;">Detalle: ${e(descripcion)}</p>` : ''}
       ${contacto ? `<p style="color:#4A4A4A;margin:5px 0;">Contacto: ${e(contacto)}</p>` : ''}
     </div>
@@ -543,7 +548,7 @@ function emailBienvenida(nombre, rangosJson, tarea) {
     }
   } catch {}
 
-  const tareaDisplay = tarea ? etiquetaTarea(tarea) : '';
+  const tareaDisplay = textoTareaRegistro(tarea);
 
   return `
 <div style="font-family:Arial,sans-serif;max-width:540px;margin:0 auto;">
@@ -558,7 +563,7 @@ function emailBienvenida(nombre, rangosJson, tarea) {
     <div style="background:#E8F0FA;border-radius:8px;padding:14px 16px;margin:16px 0;">
       <p style="color:#1A3A6B;font-weight:600;margin:0 0 8px;">Tus horarios registrados:</p>
       <ul style="list-style:none;padding:0;margin:0;">${listaRangos}</ul>
-      ${tareaDisplay ? `<p style="color:#1A3A6B;font-weight:600;margin:16px 0 0;">Tu tarea: ${e(tareaDisplay)}</p>` : ''}
+      <p style="color:#1A3A6B;font-weight:600;margin:16px 0 0;">Tu tarea: <span style="font-weight:500;color:#4A4A4A;">${e(tareaDisplay)}</span></p>
     </div>
     <p style="color:#4A4A4A;line-height:1.6;">
       Cuando alguien publique una necesidad que coincida con tu horario y tarea, recibiras un correo automatico al instante.
