@@ -58,7 +58,7 @@ function testEmail() {
     CORREO_ADMIN,
     'Prueba',
     'Prueba Brevo — Red Voluntarios VE',
-    emailBienvenida('Prueba', JSON.stringify([{ texto: '30/06/2026: 2:00 PM - 6:00 PM' }])),
+    emailBienvenida('Prueba', JSON.stringify([{ texto: '30/06/2026: 2:00 PM - 6:00 PM' }]), 'transporte'),
     'Correo de prueba. Si lo recibes, Brevo funciona.'
   );
   Logger.log('Correo de prueba enviado a ' + CORREO_ADMIN);
@@ -91,7 +91,7 @@ function setup() {
   if (!hVol) {
     hVol = ss.insertSheet('Voluntarios');
     hVol.getRange(1,1,1,4)
-      .setValues([['Nombre','Correo','Rangos_Horario','Habilidades']])
+      .setValues([['Nombre','Correo','Rangos_Horario','Tareas']])
       .setFontWeight('bold');
     hVol.setFrozenRows(1);
   }
@@ -100,12 +100,14 @@ function setup() {
   if (!hVac) {
     hVac = ss.insertSheet('Vacantes');
     hVac.getRange(1,1,1,8)
-      .setValues([['Lugar','Direccion','Cuando','Descripcion','Habilidad','Contacto','Fecha_Necesidad','Fecha_Publicacion']])
+      .setValues([['Lugar','Direccion','Cuando','Descripcion','Tarea','Contacto','Fecha_Necesidad','Fecha_Publicacion']])
       .setFontWeight('bold');
     hVac.setFrozenRows(1);
   } else {
-    asegurarColumnaHabilidad(hVac);
+    asegurarColumnaTarea(hVac);
   }
+
+  renombrarColumnaSiExiste(ss.getSheetByName('Voluntarios'), 'Habilidades', 'Tareas');
 
   Logger.log('Setup completado correctamente.');
 }
@@ -176,8 +178,17 @@ function convertir24aAmPm(hora24) {
 }
 
 // ══════════════════════════════════════════════
-//  FILTRO DE HABILIDADES (una sola por persona/vacante)
+//  FILTRO DE TAREAS
 // ══════════════════════════════════════════════
+
+const TAREAS_VALIDAS = {
+  'cocina': 'Cocina',
+  'transporte': 'Transporte',
+  'organizacion': 'Organización',
+  'seleccion de ropa': 'Selección de ropa',
+  'entretenimiento para los damnificados': 'Entretenimiento para los damnificados',
+  'seguridad': 'Seguridad',
+};
 
 function indiceColumna(headers, nombres, fallback) {
   for (var i = 0; i < nombres.length; i++) {
@@ -189,40 +200,49 @@ function indiceColumna(headers, nombres, fallback) {
   return fallback !== undefined ? fallback : -1;
 }
 
-function unaSolaHabilidad(str) {
+function normalizarTarea(str) {
   if (!str || !String(str).trim()) return '';
-  return String(str).trim().split(/[,;|/]+/)[0].trim();
-}
-
-function normalizarHabilidad(str) {
-  const limpia = unaSolaHabilidad(str);
-  if (!limpia) return '';
-  return limpia.toLowerCase()
+  const limpia = String(str).trim().toLowerCase()
     .normalize('NFD').replace(/[\u0300-\u036f]/g, '');
+  return TAREAS_VALIDAS[limpia] ? limpia : '';
 }
 
-function habilidadesCoinciden(habilidadVacante, habilidadesVoluntario) {
-  const req = normalizarHabilidad(habilidadVacante);
-  const of  = normalizarHabilidad(habilidadesVoluntario);
+function tareaVoluntario(str) {
+  return normalizarTarea(str);
+}
 
-  // Vacante sin habilidad → solo voluntarios sin habilidad
+function etiquetaTarea(valor) {
+  const key = normalizarTarea(valor);
+  return key ? TAREAS_VALIDAS[key] : (valor || '');
+}
+
+function tareasCoinciden(tareaVacante, tareaVoluntario) {
+  const req = normalizarTarea(tareaVacante);
+  const of  = normalizarTarea(tareaVoluntario);
+
   if (!req) return !of;
-
-  // Vacante con habilidad → voluntario debe tener exactamente la misma
   if (!of) return false;
   return req === of;
 }
 
-function asegurarColumnaHabilidad(hVac) {
+function renombrarColumnaSiExiste(hoja, nombreViejo, nombreNuevo) {
+  if (!hoja || hoja.getLastRow() < 1) return;
+  const headers = hoja.getRange(1, 1, 1, hoja.getLastColumn()).getValues()[0];
+  const idx = headers.findIndex(h => String(h || '').trim() === nombreViejo);
+  if (idx >= 0) hoja.getRange(1, idx + 1).setValue(nombreNuevo).setFontWeight('bold');
+}
+
+function asegurarColumnaTarea(hVac) {
+  renombrarColumnaSiExiste(hVac, 'Habilidad', 'Tarea');
   const headers = hVac.getRange(1, 1, 1, Math.max(1, hVac.getLastColumn())).getValues()[0];
-  if (headers.indexOf('Habilidad') >= 0) return;
+  if (indiceColumna(headers, ['Tarea', 'Tareas', 'Habilidad'], -1) >= 0) return;
 
   const descIdx = headers.indexOf('Descripcion');
   if (descIdx >= 0) {
     hVac.insertColumnAfter(descIdx + 1);
-    hVac.getRange(1, descIdx + 2).setValue('Habilidad').setFontWeight('bold');
+    hVac.getRange(1, descIdx + 2).setValue('Tarea').setFontWeight('bold');
   } else {
-    hVac.getRange(1, headers.length + 1).setValue('Habilidad').setFontWeight('bold');
+    hVac.getRange(1, headers.length + 1).setValue('Tarea').setFontWeight('bold');
   }
 }
 
@@ -320,14 +340,14 @@ function registrarVoluntario(data) {
         data.nombre,
         data.email,
         JSON.stringify(rangosFinales),
-        unaSolaHabilidad(data.habilidades || '') || datos[filaExistente][3] || '',
+        tareaVoluntario(data.tareas || data.habilidades || '') || datos[filaExistente][3] || '',
       ]]);
     } else {
       hoja.appendRow([
         data.nombre,
         data.email,
-        data.rangos      || '[]',
-        unaSolaHabilidad(data.habilidades || ''),
+        data.rangos || '[]',
+        tareaVoluntario(data.tareas || data.habilidades || ''),
       ]);
     }
 
@@ -335,17 +355,20 @@ function registrarVoluntario(data) {
       .map(r => r.texto || (convertir24aAmPm(r.desde) + ' - ' + convertir24aAmPm(r.hasta)))
       .join(' | ');
 
+    const tareaGuardada = tareaVoluntario(data.tareas || data.habilidades || '');
+
     enviarCorreoBrevo(
       data.email,
       data.nombre,
       esActualizacion
         ? 'Tu horario fue actualizado — Red Voluntarios Venezuela'
         : 'Gracias por registrarte — Red Voluntarios Venezuela',
-      emailBienvenida(data.nombre, JSON.stringify(rangosFinales)),
+      emailBienvenida(data.nombre, JSON.stringify(rangosFinales), tareaGuardada),
       'Hola ' + data.nombre + '. ' +
         (esActualizacion ? 'Agregamos tu nuevo horario.' : 'Gracias por registrarte.') +
         ' Tus horarios actuales: ' + rangosTexto +
-        '. Te avisaremos cuando haya una necesidad en tu horario.'
+        (tareaGuardada ? '. Tu tarea: ' + etiquetaTarea(tareaGuardada) + '.' : '') +
+        ' Te avisaremos cuando haya una necesidad que coincida.'
     );
 
     return { success: true, actualizado: esActualizacion };
@@ -362,17 +385,17 @@ function registrarVacante(data) {
   try {
     const ss   = SpreadsheetApp.openById(SHEET_ID);
     const hVac = ss.getSheetByName('Vacantes');
-    asegurarColumnaHabilidad(hVac);
+    asegurarColumnaTarea(hVac);
 
     const fechaVacante = data.fecha || fechaHoyVenezuela();
-    const habilidadVacante = unaSolaHabilidad(data.habilidad || '');
+    const tareaVacante = normalizarTarea(data.tarea || data.habilidad || '');
 
     hVac.appendRow([
       data.lugar,
       data.direccion,
       data.cuando,
       data.descripcion || '',
-      habilidadVacante,
+      tareaVacante,
       data.contacto     || '',
       fechaVacante,
       new Date().toISOString(),
@@ -380,7 +403,7 @@ function registrarVacante(data) {
 
     notificarVoluntarios(
       ss, data.lugar, data.direccion, data.cuando, fechaVacante,
-      data.contacto, habilidadVacante, data.descripcion || ''
+      data.contacto, tareaVacante, data.descripcion || ''
     );
 
     return { success: true };
@@ -389,15 +412,15 @@ function registrarVacante(data) {
   }
 }
 
-function notificarVoluntarios(ss, lugar, direccion, cuando, fechaVacante, contacto, habilidadRequerida, descripcion) {
+function notificarVoluntarios(ss, lugar, direccion, cuando, fechaVacante, contacto, tareaRequerida, descripcion) {
   const hVol    = ss.getSheetByName('Voluntarios');
   const datos   = hVol.getDataRange().getValues();
   const headers = datos[0];
-  const iNombre      = indiceColumna(headers, ['Nombre'], 0);
-  const iCorreo      = indiceColumna(headers, ['Correo'], 1);
-  const iRangos      = indiceColumna(headers, ['Rangos_Horario'], 2);
-  const iHabilidades = indiceColumna(headers, ['Habilidades', 'Habilidad'], 3);
-  const habilidadReq = unaSolaHabilidad(habilidadRequerida || '');
+  const iNombre  = indiceColumna(headers, ['Nombre'], 0);
+  const iCorreo  = indiceColumna(headers, ['Correo'], 1);
+  const iRangos  = indiceColumna(headers, ['Rangos_Horario'], 2);
+  const iTareas  = indiceColumna(headers, ['Tareas', 'Tarea', 'Habilidades', 'Habilidad'], 3);
+  const tareaReq = normalizarTarea(tareaRequerida || '');
 
   const esAhora = cuando === 'AHORA MISMO';
   const minutosSolicitados = esAhora ? horaActualVenezuelaEnMinutos() : horaAMinutos(cuando);
@@ -406,8 +429,8 @@ function notificarVoluntarios(ss, lugar, direccion, cuando, fechaVacante, contac
   const compatibles = datos.slice(1).filter(fila => {
     if (!fila[iCorreo]) return false;
 
-    const habVol = String(fila[iHabilidades] || '').trim();
-    if (!habilidadesCoinciden(habilidadReq, habVol)) return false;
+    const tareaVol = String(fila[iTareas] || '').trim();
+    if (!tareasCoinciden(tareaReq, tareaVol)) return false;
 
     try {
       const rangos = JSON.parse(fila[iRangos] || '[]');
@@ -419,9 +442,9 @@ function notificarVoluntarios(ss, lugar, direccion, cuando, fechaVacante, contac
     } catch { return false; }
   });
 
-  const habilidadTexto = habilidadReq
-    ? ' con habilidad "' + habilidadReq + '"'
-    : ' (sin habilidad especifica)';
+  const tareaTexto = tareaReq
+    ? ' con tarea "' + etiquetaTarea(tareaReq) + '"'
+    : ' (sin tarea especifica)';
 
   if (!compatibles.length) {
     enviarCorreoBrevo(
@@ -430,13 +453,13 @@ function notificarVoluntarios(ss, lugar, direccion, cuando, fechaVacante, contac
       'Sin voluntarios disponibles para: ' + lugar,
       '<p>Se publico una necesidad en <strong>' + e(lugar) + '</strong> para ' +
         (esAhora ? 'AHORA MISMO' : e(convertir24aAmPm(cuando))) +
-        ' (' + e(fechaSolicitada) + ')' + e(habilidadTexto) +
-        ', pero ningun voluntario coincide con fecha, horario y habilidad.</p>',
+        ' (' + e(fechaSolicitada) + ')' + e(tareaTexto) +
+        ', pero ningun voluntario coincide con fecha, horario y tarea.</p>',
       'Se publico una necesidad en ' + lugar + ' para ' + (esAhora ? 'AHORA MISMO' : cuando) +
-        ' (' + fechaSolicitada + ')' + habilidadTexto +
+        ' (' + fechaSolicitada + ')' + tareaTexto +
         ', pero ningun voluntario coincide.'
     );
-    Logger.log('Sin voluntarios para "' + cuando + '" (' + fechaSolicitada + ') en ' + lugar + habilidadTexto);
+    Logger.log('Sin voluntarios para "' + cuando + '" (' + fechaSolicitada + ') en ' + lugar + tareaTexto);
     return;
   }
 
@@ -449,10 +472,10 @@ function notificarVoluntarios(ss, lugar, direccion, cuando, fechaVacante, contac
         correo,
         nombre,
         'Se necesitan voluntarios en ' + lugar + ' — ' + (esAhora ? 'AHORA MISMO' : convertir24aAmPm(cuando)),
-        emailNotificacion(nombre, lugar, direccion, cuando, fechaSolicitada, contacto, habilidadReq, descripcion),
+        emailNotificacion(nombre, lugar, direccion, cuando, fechaSolicitada, contacto, tareaReq, descripcion),
         'Hola ' + nombre + '. Se necesitan voluntarios en ' + lugar + ', ' + direccion +
           '. Hora: ' + (esAhora ? 'AHORA MISMO' : convertir24aAmPm(cuando)) +
-          (habilidadReq ? '. Habilidad: ' + habilidadReq : '') +
+          (tareaReq ? '. Tarea: ' + etiquetaTarea(tareaReq) : '') +
           (contacto ? '. Contacto: ' + contacto : '')
       );
       enviados++;
@@ -461,17 +484,18 @@ function notificarVoluntarios(ss, lugar, direccion, cuando, fechaVacante, contac
     }
   });
 
-  Logger.log(lugar + ' (' + cuando + ', ' + fechaSolicitada + ')' + habilidadTexto + ' — ' + enviados + ' notificados.');
+  Logger.log(lugar + ' (' + cuando + ', ' + fechaSolicitada + ')' + tareaTexto + ' — ' + enviados + ' notificados.');
 }
 
 // ══════════════════════════════════════════════
 //  PLANTILLAS DE CORREO
 // ══════════════════════════════════════════════
 
-function emailNotificacion(nombre, lugar, direccion, cuando, fechaISO, contacto, habilidad, descripcion) {
+function emailNotificacion(nombre, lugar, direccion, cuando, fechaISO, contacto, tarea, descripcion) {
   const esAhora = cuando === 'AHORA MISMO';
   const horaDisplay = esAhora ? 'AHORA MISMO' : convertir24aAmPm(cuando);
   const fechaDisplay = fechaISO ? formatearFechaLegible(fechaISO) : '';
+  const tareaDisplay = tarea ? etiquetaTarea(tarea) : '';
   return `
 <div style="font-family:Arial,sans-serif;max-width:540px;margin:0 auto;">
   <div style="background:#1A3A6B;padding:24px;border-radius:12px 12px 0 0;text-align:center;">
@@ -481,14 +505,14 @@ function emailNotificacion(nombre, lugar, direccion, cuando, fechaISO, contacto,
   <div style="background:#ffffff;padding:28px 24px;border:1px solid #C8D8EF;border-radius:0 0 12px 12px;">
     <h2 style="color:#1A3A6B;margin-top:0;">Hola, ${e(nombre)}</h2>
     <p style="color:#4A4A4A;line-height:1.6;">
-      Se necesitan voluntarios y tu horario y habilidad coinciden con esta necesidad:
+      Se necesitan voluntarios y tu horario y tarea coinciden con esta necesidad:
     </p>
     <div style="background:#FDF0E6;border-left:4px solid #E87A35;border-radius:4px;padding:18px;margin:16px 0;">
       <p style="color:#E87A35;font-weight:700;font-size:18px;margin:0 0 10px;">${e(lugar)}</p>
       <p style="color:#4A4A4A;margin:5px 0;">Direccion: ${e(direccion)}</p>
       ${fechaDisplay ? `<p style="color:#4A4A4A;margin:5px 0;">Dia: <strong>${e(fechaDisplay)}</strong></p>` : ''}
       <p style="color:#4A4A4A;margin:5px 0;">Hora: <strong>${e(horaDisplay)}</strong></p>
-      ${habilidad ? `<p style="color:#4A4A4A;margin:5px 0;">Habilidad: <strong>${e(habilidad)}</strong></p>` : ''}
+      ${tareaDisplay ? `<p style="color:#4A4A4A;margin:5px 0;">Tarea: <strong>${e(tareaDisplay)}</strong></p>` : ''}
       ${descripcion ? `<p style="color:#4A4A4A;margin:5px 0;">Detalle: ${e(descripcion)}</p>` : ''}
       ${contacto ? `<p style="color:#4A4A4A;margin:5px 0;">Contacto: ${e(contacto)}</p>` : ''}
     </div>
@@ -508,7 +532,7 @@ function formatearFechaLegible(fechaISO) {
   return `${diaSemana} ${d} de ${meses[m-1]} de ${y}`;
 }
 
-function emailBienvenida(nombre, rangosJson) {
+function emailBienvenida(nombre, rangosJson, tarea) {
   let listaRangos = '<li style="color:#767676;">Sin horarios registrados</li>';
   try {
     const rangos = JSON.parse(rangosJson || '[]');
@@ -518,6 +542,8 @@ function emailBienvenida(nombre, rangosJson) {
       ).join('');
     }
   } catch {}
+
+  const tareaDisplay = tarea ? etiquetaTarea(tarea) : '';
 
   return `
 <div style="font-family:Arial,sans-serif;max-width:540px;margin:0 auto;">
@@ -532,9 +558,10 @@ function emailBienvenida(nombre, rangosJson) {
     <div style="background:#E8F0FA;border-radius:8px;padding:14px 16px;margin:16px 0;">
       <p style="color:#1A3A6B;font-weight:600;margin:0 0 8px;">Tus horarios registrados:</p>
       <ul style="list-style:none;padding:0;margin:0;">${listaRangos}</ul>
+      ${tareaDisplay ? `<p style="color:#1A3A6B;font-weight:600;margin:16px 0 0;">Tu tarea: ${e(tareaDisplay)}</p>` : ''}
     </div>
     <p style="color:#4A4A4A;line-height:1.6;">
-      Cuando alguien publique una necesidad de voluntarios dentro de tu horario, recibiras un correo automatico al instante.
+      Cuando alguien publique una necesidad que coincida con tu horario y tarea, recibiras un correo automatico al instante.
     </p>
     <p style="color:#999999;font-size:12px;margin-top:20px;border-top:1px solid #eeeeee;padding-top:14px;">
       Red Voluntarios Venezuela - 2026

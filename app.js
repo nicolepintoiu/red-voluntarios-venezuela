@@ -11,6 +11,36 @@ const CONFIG = {
 
 const CORREO_ADMIN = 'techsolutionsalthea@gmail.com';
 
+const TAREAS = [
+  { value: 'cocina', label: 'Cocina' },
+  { value: 'transporte', label: 'Transporte' },
+  { value: 'organizacion', label: 'Organización' },
+  { value: 'seleccion de ropa', label: 'Selección de ropa' },
+  { value: 'entretenimiento para los damnificados', label: 'Entretenimiento para los damnificados' },
+  { value: 'seguridad', label: 'Seguridad' },
+];
+
+function opcionesTareaSelect(seleccionada = '') {
+  let html = '<option value="">— Sin tarea específica —</option>';
+  TAREAS.forEach(t => {
+    const sel = t.value === seleccionada ? ' selected' : '';
+    html += `<option value="${t.value}"${sel}>${t.label}</option>`;
+  });
+  return html;
+}
+
+function etiquetaTarea(valor) {
+  const t = TAREAS.find(x => x.value === valor);
+  return t ? t.label : valor;
+}
+
+function poblarSelectsTarea() {
+  ['r_tarea', 'v_tarea'].forEach(id => {
+    const el = document.getElementById(id);
+    if (el) el.innerHTML = opcionesTareaSelect();
+  });
+}
+
 // ══════════════════════════════════════════════
 //  NAVEGACION
 // ══════════════════════════════════════════════
@@ -214,19 +244,11 @@ document.getElementById('registroForm').addEventListener('submit', async (e) => 
   }
   document.getElementById('err_rangos').textContent = '';
 
-  const habilidades = limpiarUnaHabilidad(form.habilidades.value);
-  if (!esUnaSolaHabilidad(form.habilidades.value)) {
-    const errEl = document.getElementById('err_r_habilidades');
-    markError(form.habilidades, errEl, 'Solo puedes escribir una habilidad.');
-    return;
-  }
-  document.getElementById('err_r_habilidades').textContent = '';
-
   const data = {
     nombre:      form.nombre.value.trim(),
     email:       form.email.value.trim(),
     rangos:      JSON.stringify(rangos),
-    habilidades: habilidades,
+    tareas:      form.tarea.value,
   };
 
   setLoading('btnRegistro', true);
@@ -323,16 +345,17 @@ function updatePreview() {
     cuando = `el <strong>${fechaTexto}</strong> a las <strong>${getHoraVacante().display}</strong>`;
   }
 
-  const habilidad = document.getElementById('v_habilidad')?.value.trim() || '';
-  const habilidadTexto = habilidad
-    ? ` Habilidad requerida: <strong>${esc(habilidad)}</strong>.`
-    : ' Sin habilidad especifica (solo voluntarios generales).';
+  const tarea = document.getElementById('v_tarea')?.value || '';
+  const tareaTexto = tarea
+    ? ` Tarea requerida: <strong>${esc(etiquetaTarea(tarea))}</strong>.`
+    : ' Sin tarea específica (solo voluntarios generales).';
 
   document.getElementById('notifyText').innerHTML =
-    `Se necesitan voluntarios en <strong>${esc(lugar)}</strong> ubicado en ${esc(direccion)}, ${cuando}.${habilidadTexto}`;
+    `Se necesitan voluntarios en <strong>${esc(lugar)}</strong> ubicado en ${esc(direccion)}, ${cuando}.${tareaTexto}`;
 }
 
 document.getElementById('v_institucion').addEventListener('change', updatePreview);
+document.getElementById('v_tarea')?.addEventListener('change', updatePreview);
 
 document.getElementById('vacanteForm').addEventListener('submit', async (e) => {
   e.preventDefault();
@@ -363,19 +386,12 @@ document.getElementById('vacanteForm').addEventListener('submit', async (e) => {
     cuando = getHoraVacante().valor24;
   }
 
-  const habilidadRaw = form.habilidad.value.trim();
-  if (!esUnaSolaHabilidad(habilidadRaw)) {
-    markError(form.habilidad, document.getElementById('err_v_habilidad'), 'Solo puedes escribir una habilidad.');
-    return;
-  }
-  document.getElementById('err_v_habilidad').textContent = '';
-
   const data = {
     lugar:       inst.nombre,
     direccion:   inst.direccion,
     cuando:      cuando,
     fecha:       fecha,
-    habilidad:   limpiarUnaHabilidad(habilidadRaw),
+    tarea:       form.tarea.value,
     descripcion: form.descripcion.value.trim(),
     contacto:    CORREO_ADMIN,
   };
@@ -473,16 +489,6 @@ function showToast(msg, type = 'success') {
 }
 
 function delay(ms) { return new Promise(r => setTimeout(r, ms)); }
-
-function esUnaSolaHabilidad(val) {
-  const v = val.trim();
-  if (!v) return true;
-  return !/[,;|/]/.test(v);
-}
-
-function limpiarUnaHabilidad(val) {
-  return val.trim().split(/[,;|/]+/)[0].trim();
-}
 function esc(str) {
   const d = document.createElement('div');
   d.appendChild(document.createTextNode(str));
@@ -491,6 +497,7 @@ function esc(str) {
 
 // INIT
 document.addEventListener('DOMContentLoaded', () => {
+  poblarSelectsTarea();
   agregarRango();
   loadRefugios();
   cargarContadores();

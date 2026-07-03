@@ -89,12 +89,12 @@
         <div class="form-sidebar">
           <p class="section-eyebrow">Voluntarios</p>
           <h2 class="section-title">Registrate para ayudar</h2>
-          <p class="section-desc">Indica en que horarios puedes ayudar y que habilidades tienes. Solo te avisamos cuando coinciden fecha, hora y habilidad (si la publicacion la pide).</p>
+          <p class="section-desc">Indica en que horarios puedes ayudar y que tarea puedes realizar. Solo te avisamos cuando coinciden fecha, hora y tarea (si la publicacion la pide).</p>
           <ul class="benefit-list">
             <li>Puedes agregar varios rangos de horario</li>
-            <li>Solo puedes indicar una habilidad (ej. cocina, transporte)</li>
-            <li>Si pusiste habilidad, solo te avisan cuando la necesitan</li>
-            <li>Si no pusiste habilidad, solo te avisan cuando no piden ninguna</li>
+            <li>Elige una tarea de la lista o dejala sin especificar</li>
+            <li>Si elegiste tarea, solo te avisan cuando la necesitan</li>
+            <li>Si no elegiste tarea, solo te avisan cuando no piden ninguna</li>
           </ul>
         </div>
         <div class="form-card">
@@ -119,11 +119,14 @@
               <span class="field-error" id="err_rangos"></span>
             </div>
             <div class="form-group">
-              <label for="r_habilidades">Tu habilidad <span class="optional">(opcional, solo una)</span></label>
-              <p class="field-hint">Escribe una sola habilidad. Ej: cocina, transporte, primeros auxilios.</p>
-              <input type="text" id="r_habilidades" name="habilidades"
-                placeholder="Ej. transporte" />
-              <span class="field-error" id="err_r_habilidades"></span>
+              <label for="r_tarea">Tu tarea <span class="optional">(opcional)</span></label>
+              <p class="field-hint">Selecciona una tarea de la lista. Solo recibiras avisos que coincidan con ella.</p>
+              <div class="select-wrap">
+                <select id="r_tarea" name="tarea">
+                  <option value="">— Sin tarea específica —</option>
+                </select>
+                <span class="select-arrow">▾</span>
+              </div>
             </div>
             <button type="submit" class="btn btn--primary btn--full" id="btnRegistro">
               <span class="btn-text">Registrarme como voluntario</span>
@@ -148,10 +151,10 @@
         <div class="form-sidebar">
           <p class="section-eyebrow">Publicar necesidad</p>
           <h2 class="section-title">Necesitas voluntarios?</h2>
-          <p class="section-desc">Selecciona el lugar e indica a que hora necesitas ayuda. Si indicas una habilidad, solo se avisa a voluntarios con esa habilidad. Si no indicas habilidad, solo se avisa a quienes no pusieron ninguna.</p>
+          <p class="section-desc">Selecciona el lugar e indica a que hora necesitas ayuda. Si indicas una tarea, solo se avisa a voluntarios con esa tarea. Si no indicas tarea, solo se avisa a quienes no eligieron ninguna.</p>
           <div class="flow-steps">
             <div class="flow-step"><span class="step-num">1</span><span>Elige la institucion o edificio</span></div>
-            <div class="flow-step"><span class="step-num">2</span><span>Indica fecha, hora y habilidad (opcional)</span></div>
+            <div class="flow-step"><span class="step-num">2</span><span>Indica fecha, hora y tarea (opcional)</span></div>
             <div class="flow-step"><span class="step-num">3</span><span>Solo los voluntarios que coinciden reciben el correo</span></div>
           </div>
         </div>
@@ -211,11 +214,14 @@
             </div>
 
             <div class="form-group">
-              <label for="v_habilidad">Habilidad requerida <span class="optional">(opcional, solo una)</span></label>
-              <p class="field-hint">Escribe una sola habilidad. Si la indicas, solo avisamos a voluntarios con esa misma habilidad. Si la dejas vacia, solo avisamos a quienes no pusieron habilidad.</p>
-              <input type="text" id="v_habilidad" name="habilidad"
-                placeholder="Ej. transporte" oninput="updatePreview()" />
-              <span class="field-error" id="err_v_habilidad"></span>
+              <label for="v_tarea">Tarea requerida <span class="optional">(opcional)</span></label>
+              <p class="field-hint">Selecciona una tarea. Si la indicas, solo avisamos a voluntarios con esa misma tarea.</p>
+              <div class="select-wrap">
+                <select id="v_tarea" name="tarea" onchange="updatePreview()">
+                  <option value="">— Sin tarea específica —</option>
+                </select>
+                <span class="select-arrow">▾</span>
+              </div>
             </div>
 
             <div class="form-group">
