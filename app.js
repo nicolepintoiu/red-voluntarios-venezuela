@@ -214,11 +214,19 @@ document.getElementById('registroForm').addEventListener('submit', async (e) => 
   }
   document.getElementById('err_rangos').textContent = '';
 
+  const habilidades = limpiarUnaHabilidad(form.habilidades.value);
+  if (!esUnaSolaHabilidad(form.habilidades.value)) {
+    const errEl = document.getElementById('err_r_habilidades');
+    markError(form.habilidades, errEl, 'Solo puedes escribir una habilidad.');
+    return;
+  }
+  document.getElementById('err_r_habilidades').textContent = '';
+
   const data = {
     nombre:      form.nombre.value.trim(),
     email:       form.email.value.trim(),
     rangos:      JSON.stringify(rangos),
-    habilidades: form.habilidades.value.trim(),
+    habilidades: habilidades,
   };
 
   setLoading('btnRegistro', true);
@@ -355,12 +363,19 @@ document.getElementById('vacanteForm').addEventListener('submit', async (e) => {
     cuando = getHoraVacante().valor24;
   }
 
+  const habilidadRaw = form.habilidad.value.trim();
+  if (!esUnaSolaHabilidad(habilidadRaw)) {
+    markError(form.habilidad, document.getElementById('err_v_habilidad'), 'Solo puedes escribir una habilidad.');
+    return;
+  }
+  document.getElementById('err_v_habilidad').textContent = '';
+
   const data = {
     lugar:       inst.nombre,
     direccion:   inst.direccion,
     cuando:      cuando,
     fecha:       fecha,
-    habilidad:   form.habilidad.value.trim(),
+    habilidad:   limpiarUnaHabilidad(habilidadRaw),
     descripcion: form.descripcion.value.trim(),
     contacto:    CORREO_ADMIN,
   };
@@ -458,6 +473,16 @@ function showToast(msg, type = 'success') {
 }
 
 function delay(ms) { return new Promise(r => setTimeout(r, ms)); }
+
+function esUnaSolaHabilidad(val) {
+  const v = val.trim();
+  if (!v) return true;
+  return !/[,;|/]/.test(v);
+}
+
+function limpiarUnaHabilidad(val) {
+  return val.trim().split(/[,;|/]+/)[0].trim();
+}
 function esc(str) {
   const d = document.createElement('div');
   d.appendChild(document.createTextNode(str));

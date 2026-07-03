@@ -176,32 +176,41 @@ function convertir24aAmPm(hora24) {
 }
 
 // ══════════════════════════════════════════════
-//  FILTRO DE HABILIDADES
+//  FILTRO DE HABILIDADES (una sola por persona/vacante)
 // ══════════════════════════════════════════════
 
-function parseHabilidades(str) {
-  if (!str || !String(str).trim()) return [];
-  return String(str)
-    .toLowerCase()
-    .normalize('NFD').replace(/[\u0300-\u036f]/g, '')
-    .split(/[,;|/]+/)
-    .map(s => s.trim())
-    .filter(Boolean);
+function indiceColumna(headers, nombres, fallback) {
+  for (var i = 0; i < nombres.length; i++) {
+    const idx = headers.findIndex(h =>
+      String(h || '').trim().toLowerCase() === nombres[i].toLowerCase()
+    );
+    if (idx >= 0) return idx;
+  }
+  return fallback !== undefined ? fallback : -1;
+}
+
+function unaSolaHabilidad(str) {
+  if (!str || !String(str).trim()) return '';
+  return String(str).trim().split(/[,;|/]+/)[0].trim();
+}
+
+function normalizarHabilidad(str) {
+  const limpia = unaSolaHabilidad(str);
+  if (!limpia) return '';
+  return limpia.toLowerCase()
+    .normalize('NFD').replace(/[\u0300-\u036f]/g, '');
 }
 
 function habilidadesCoinciden(habilidadVacante, habilidadesVoluntario) {
-  const requeridas = parseHabilidades(habilidadVacante);
-  const ofrecidas  = parseHabilidades(habilidadesVoluntario);
+  const req = normalizarHabilidad(habilidadVacante);
+  const of  = normalizarHabilidad(habilidadesVoluntario);
 
   // Vacante sin habilidad → solo voluntarios sin habilidad
-  if (!requeridas.length) return !ofrecidas.length;
+  if (!req) return !of;
 
-  // Vacante con habilidad → voluntario debe tener al menos una que coincida
-  if (!ofrecidas.length) return false;
-
-  return requeridas.some(req =>
-    ofrecidas.some(of => of === req || of.indexOf(req) >= 0 || req.indexOf(of) >= 0)
-  );
+  // Vacante con habilidad → voluntario debe tener exactamente la misma
+  if (!of) return false;
+  return req === of;
 }
 
 function asegurarColumnaHabilidad(hVac) {
@@ -311,14 +320,14 @@ function registrarVoluntario(data) {
         data.nombre,
         data.email,
         JSON.stringify(rangosFinales),
-        data.habilidades || datos[filaExistente][3] || '',
+        unaSolaHabilidad(data.habilidades || '') || datos[filaExistente][3] || '',
       ]]);
     } else {
       hoja.appendRow([
         data.nombre,
         data.email,
         data.rangos      || '[]',
-        data.habilidades || '',
+        unaSolaHabilidad(data.habilidades || ''),
       ]);
     }
 
@@ -356,13 +365,14 @@ function registrarVacante(data) {
     asegurarColumnaHabilidad(hVac);
 
     const fechaVacante = data.fecha || fechaHoyVenezuela();
+    const habilidadVacante = unaSolaHabilidad(data.habilidad || '');
 
     hVac.appendRow([
       data.lugar,
       data.direccion,
       data.cuando,
       data.descripcion || '',
-      data.habilidad    || '',
+      habilidadVacante,
       data.contacto     || '',
       fechaVacante,
       new Date().toISOString(),
@@ -370,7 +380,7 @@ function registrarVacante(data) {
 
     notificarVoluntarios(
       ss, data.lugar, data.direccion, data.cuando, fechaVacante,
-      data.contacto, data.habilidad || '', data.descripcion || ''
+      data.contacto, habilidadVacante, data.descripcion || ''
     );
 
     return { success: true };
@@ -383,10 +393,11 @@ function notificarVoluntarios(ss, lugar, direccion, cuando, fechaVacante, contac
   const hVol    = ss.getSheetByName('Voluntarios');
   const datos   = hVol.getDataRange().getValues();
   const headers = datos[0];
-  const iNombre      = headers.indexOf('Nombre');
-  const iCorreo      = headers.indexOf('Correo');
-  const iRangos      = headers.indexOf('Rangos_Horario');
-  const iHabilidades = headers.indexOf('Habilidades');
+  const iNombre      = indiceColumna(headers, ['Nombre'], 0);
+  const iCorreo      = indiceColumna(headers, ['Correo'], 1);
+  const iRangos      = indiceColumna(headers, ['Rangos_Horario'], 2);
+  const iHabilidades = indiceColumna(headers, ['Habilidades', 'Habilidad'], 3);
+  const habilidadReq = unaSolaHabilidad(habilidadRequerida || '');
 
   const esAhora = cuando === 'AHORA MISMO';
   const minutosSolicitados = esAhora ? horaActualVenezuelaEnMinutos() : horaAMinutos(cuando);
@@ -395,8 +406,8 @@ function notificarVoluntarios(ss, lugar, direccion, cuando, fechaVacante, contac
   const compatibles = datos.slice(1).filter(fila => {
     if (!fila[iCorreo]) return false;
 
-    const habVol = iHabilidades >= 0 ? (fila[iHabilidades] || '') : '';
-    if (!habilidadesCoinciden(habilidadRequerida, habVol)) return false;
+    const habVol = String(fila[iHabilidades] || '').trim();
+    if (!habilidadesCoinciden(habilidadReq, habVol)) return false;
 
     try {
       const rangos = JSON.parse(fila[iRangos] || '[]');
@@ -408,8 +419,8 @@ function notificarVoluntarios(ss, lugar, direccion, cuando, fechaVacante, contac
     } catch { return false; }
   });
 
-  const habilidadTexto = habilidadRequerida
-    ? ' con habilidad "' + habilidadRequerida + '"'
+  const habilidadTexto = habilidadReq
+    ? ' con habilidad "' + habilidadReq + '"'
     : ' (sin habilidad especifica)';
 
   if (!compatibles.length) {
@@ -438,10 +449,10 @@ function notificarVoluntarios(ss, lugar, direccion, cuando, fechaVacante, contac
         correo,
         nombre,
         'Se necesitan voluntarios en ' + lugar + ' — ' + (esAhora ? 'AHORA MISMO' : convertir24aAmPm(cuando)),
-        emailNotificacion(nombre, lugar, direccion, cuando, fechaSolicitada, contacto, habilidadRequerida, descripcion),
+        emailNotificacion(nombre, lugar, direccion, cuando, fechaSolicitada, contacto, habilidadReq, descripcion),
         'Hola ' + nombre + '. Se necesitan voluntarios en ' + lugar + ', ' + direccion +
           '. Hora: ' + (esAhora ? 'AHORA MISMO' : convertir24aAmPm(cuando)) +
-          (habilidadRequerida ? '. Habilidad: ' + habilidadRequerida : '') +
+          (habilidadReq ? '. Habilidad: ' + habilidadReq : '') +
           (contacto ? '. Contacto: ' + contacto : '')
       );
       enviados++;

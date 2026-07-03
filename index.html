@@ -92,6 +92,7 @@
           <p class="section-desc">Indica en que horarios puedes ayudar y que habilidades tienes. Solo te avisamos cuando coinciden fecha, hora y habilidad (si la publicacion la pide).</p>
           <ul class="benefit-list">
             <li>Puedes agregar varios rangos de horario</li>
+            <li>Solo puedes indicar una habilidad (ej. cocina, transporte)</li>
             <li>Si pusiste habilidad, solo te avisan cuando la necesitan</li>
             <li>Si no pusiste habilidad, solo te avisan cuando no piden ninguna</li>
           </ul>
@@ -118,9 +119,11 @@
               <span class="field-error" id="err_rangos"></span>
             </div>
             <div class="form-group">
-              <label for="r_habilidades">Que puedes hacer? <span class="optional">(opcional)</span></label>
+              <label for="r_habilidades">Tu habilidad <span class="optional">(opcional, solo una)</span></label>
+              <p class="field-hint">Escribe una sola habilidad. Ej: cocina, transporte, primeros auxilios.</p>
               <input type="text" id="r_habilidades" name="habilidades"
-                placeholder="Ej. primeros auxilios, cocina, transporte…" />
+                placeholder="Ej. transporte" />
+              <span class="field-error" id="err_r_habilidades"></span>
             </div>
             <button type="submit" class="btn btn--primary btn--full" id="btnRegistro">
               <span class="btn-text">Registrarme como voluntario</span>
@@ -208,10 +211,11 @@
             </div>
 
             <div class="form-group">
-              <label for="v_habilidad">Que habilidad se necesita? <span class="optional">(opcional)</span></label>
-              <p class="field-hint">Si la indicas, solo reciben aviso voluntarios con esa habilidad en ese horario. Si la dejas vacia, solo avisamos a quienes no pusieron habilidad.</p>
+              <label for="v_habilidad">Habilidad requerida <span class="optional">(opcional, solo una)</span></label>
+              <p class="field-hint">Escribe una sola habilidad. Si la indicas, solo avisamos a voluntarios con esa misma habilidad. Si la dejas vacia, solo avisamos a quienes no pusieron habilidad.</p>
               <input type="text" id="v_habilidad" name="habilidad"
-                placeholder="Ej. transporte, primeros auxilios, cocina…" oninput="updatePreview()" />
+                placeholder="Ej. transporte" oninput="updatePreview()" />
+              <span class="field-error" id="err_v_habilidad"></span>
             </div>
 
             <div class="form-group">
