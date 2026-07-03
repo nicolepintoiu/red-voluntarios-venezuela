@@ -190,8 +190,9 @@ input, select, textarea { font-family: inherit; }
   border-top: 1px solid var(--border);
   display: flex;
   flex-direction: column;
-  align-items: center;
+  align-items: stretch;
   gap: 16px;
+  width: 100%;
 }
 .btn--institutions {
   background: var(--azul);
@@ -205,7 +206,6 @@ input, select, textarea { font-family: inherit; }
 }
 .institutions-page-card {
   width: 100%;
-  max-width: 560px;
   background: var(--white);
   border: 1px solid var(--border);
   border-radius: var(--radius-lg);
@@ -228,8 +228,8 @@ input, select, textarea { font-family: inherit; }
 }
 .institutions-contact-list {
   list-style: none;
-  display: flex;
-  flex-direction: column;
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
   gap: 14px;
 }
 .institutions-contact-list li {
@@ -239,6 +239,7 @@ input, select, textarea { font-family: inherit; }
   padding: 14px 16px;
   background: var(--azul-light);
   border-radius: var(--radius-sm);
+  min-width: 0;
 }
 .institutions-contact-label {
   font-size: .78rem;
@@ -260,6 +261,9 @@ input, select, textarea { font-family: inherit; }
 }
 
 /* RESPONSIVE */
+@media (max-width: 599px) {
+  .institutions-contact-list { grid-template-columns: 1fr; }
+}
 @media (min-width: 600px) { .card-grid { grid-template-columns: repeat(2, 1fr); } }
 @media (min-width: 900px) {
   .main-nav { display: flex; }
