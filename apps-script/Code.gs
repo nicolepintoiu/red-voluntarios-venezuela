@@ -211,6 +211,11 @@ function tareaVoluntario(str) {
   return normalizarTarea(str);
 }
 
+function etiquetaTarea(valor) {
+  const key = normalizarTarea(valor);
+  return key ? TAREAS_VALIDAS[key] : (valor || '');
+}
+
 function textoTareaRegistro(tarea) {
   return tarea ? etiquetaTarea(tarea) : 'No seleccionaste ninguna tarea';
 }
