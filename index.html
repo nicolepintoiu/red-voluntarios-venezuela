@@ -19,7 +19,6 @@
         <button class="nav-btn active"          onclick="showView('refugios')">Ver instituciones o edificios</button>
         <button class="nav-btn"                 onclick="showView('registro')">Soy voluntario</button>
         <button class="nav-btn nav-btn--accent" onclick="showView('vacante')">Necesito voluntarios</button>
-        <button class="nav-btn"                 onclick="showView('agregar')">Agregar institución</button>
       </nav>
       <button class="hamburger" id="hamburger" aria-label="Abrir menu">
         <span></span><span></span><span></span>
@@ -78,6 +77,31 @@
         </div>
         <div class="refresh-row">
           <button class="btn btn--ghost btn--sm" onclick="loadRefugios()">Actualizar</button>
+        </div>
+
+        <div class="institutions-block">
+          <button type="button" class="btn btn--institutions" id="btnInstituciones" onclick="toggleInstitucionesInfo()" aria-expanded="false" aria-controls="institucionesInfo">
+            Agregar institución
+          </button>
+          <div class="institutions-page-card hidden" id="institucionesInfo">
+            <p class="institutions-page-text">
+              Instituciones que estén interesadas en formar parte de la plataforma, comunicarse:
+            </p>
+            <ul class="institutions-contact-list">
+              <li>
+                <span class="institutions-contact-label">Correo:</span>
+                <a href="mailto:techsolutionsalthea@gmail.com">techsolutionsalthea@gmail.com</a>
+              </li>
+              <li>
+                <span class="institutions-contact-label">WhatsApp:</span>
+                <a href="https://wa.me/584241668886" target="_blank" rel="noopener noreferrer">+58 4241668886</a>
+              </li>
+              <li>
+                <span class="institutions-contact-label">WhatsApp:</span>
+                <a href="https://wa.me/584241988493" target="_blank" rel="noopener noreferrer">+58 4241988493</a>
+              </li>
+            </ul>
+          </div>
         </div>
       </div>
     </section>

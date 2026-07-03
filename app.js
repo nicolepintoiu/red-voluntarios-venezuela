@@ -50,7 +50,7 @@ function showView(name) {
   document.getElementById('view-' + name).classList.add('active');
   document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active'));
   const btns = document.querySelectorAll('.nav-btn');
-  const idx  = { refugios:0, registro:1, vacante:2, agregar:3 };
+  const idx  = { refugios:0, registro:1, vacante:2 };
   if (btns[idx[name]]) btns[idx[name]].classList.add('active');
   closeMobileNav();
   window.scrollTo({ top: 0, behavior: 'smooth' });
