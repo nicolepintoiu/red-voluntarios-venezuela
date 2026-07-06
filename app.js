@@ -11,6 +11,45 @@ const CONFIG = {
 
 const CORREO_ADMIN = 'techsolutionsalthea@gmail.com';
 
+const CIUDADES_VE = [
+  'Caracas',
+  'La Guaira',
+  'Los Teques',
+  'Maracaibo',
+  'Cabimas',
+  'Valencia',
+  'Puerto Cabello',
+  'Barquisimeto',
+  'Maracay',
+  'Ciudad Guayana',
+  'Puerto Ordaz',
+  'San Cristóbal',
+  'Mérida',
+  'Barcelona',
+  'Puerto La Cruz',
+  'Maturín',
+  'Ciudad Bolívar',
+  'Cumaná',
+  'Barinas',
+  'Punto Fijo',
+  'Coro',
+  'San Fernando de Apure',
+  'San Juan de los Morros',
+  'La Asunción',
+  'San Carlos',
+  'Trujillo',
+  'Valera',
+  'Guanare',
+  'San Felipe',
+  'Acarigua',
+  'Carúpano',
+  'El Vigía',
+  'Tucupita',
+  'Puerto Ayacucho',
+];
+
+const EDAD_STORAGE_KEY = 'rv_edad_ok';
+
 const TAREAS = [
   { value: 'cocina', label: 'Cocina' },
   { value: 'transporte', label: 'Transporte' },
@@ -43,6 +82,87 @@ function poblarSelectsTarea() {
   });
 }
 
+function opcionesCiudadSelect(seleccionada = '') {
+  let html = '<option value="">— Selecciona una ciudad —</option>';
+  CIUDADES_VE.forEach(c => {
+    const sel = c === seleccionada ? ' selected' : '';
+    html += `<option value="${escAttr(c)}"${sel}>${esc(c)}</option>`;
+  });
+  return html;
+}
+
+function poblarSelectsCiudad() {
+  ['r_ciudad', 'v_ciudad'].forEach(id => {
+    const el = document.getElementById(id);
+    if (el) el.innerHTML = opcionesCiudadSelect();
+  });
+}
+
+function escAttr(str) {
+  return String(str).replace(/&/g, '&amp;').replace(/"/g, '&quot;');
+}
+
+// ══════════════════════════════════════════════
+//  VERIFICACION DE EDAD
+// ══════════════════════════════════════════════
+
+function edadVerificada() {
+  return sessionStorage.getItem(EDAD_STORAGE_KEY) === '1';
+}
+
+function initEdadGate() {
+  if (edadVerificada()) {
+    cerrarAgeGate();
+    return;
+  }
+  document.body.classList.add('age-pending');
+  document.getElementById('ageGate')?.classList.remove('hidden');
+}
+
+function cerrarAgeGate() {
+  document.getElementById('ageGate')?.classList.add('hidden');
+  document.body.classList.remove('age-pending');
+}
+
+function mostrarAvisoLegal() {
+  document.getElementById('ageGateQuestion').classList.add('hidden');
+  document.getElementById('ageGateBlocked').classList.add('hidden');
+  document.getElementById('ageGateLegal').classList.remove('hidden');
+}
+
+function volverPreguntaEdad() {
+  document.getElementById('ageGateLegal').classList.add('hidden');
+  document.getElementById('ageGateBlocked').classList.add('hidden');
+  document.getElementById('ageGateQuestion').classList.remove('hidden');
+  const chk = document.getElementById('ageGateAccept');
+  if (chk) chk.checked = false;
+  toggleContinuarEdad();
+}
+
+function mostrarBloqueoMenor() {
+  document.getElementById('ageGateQuestion').classList.add('hidden');
+  document.getElementById('ageGateLegal').classList.add('hidden');
+  document.getElementById('ageGateBlocked').classList.remove('hidden');
+}
+
+function toggleContinuarEdad() {
+  const btn = document.getElementById('ageGateContinue');
+  const chk = document.getElementById('ageGateAccept');
+  if (btn && chk) btn.disabled = !chk.checked;
+}
+
+function confirmarMayorEdad() {
+  sessionStorage.setItem(EDAD_STORAGE_KEY, '1');
+  cerrarAgeGate();
+}
+
+function requiereEdadVerificada(accion) {
+  if (edadVerificada()) return true;
+  initEdadGate();
+  showToast('Debes confirmar que eres mayor de 18 anos para continuar.', 'error');
+  return false;
+}
+
 // ══════════════════════════════════════════════
 //  NAVEGACION
 // ══════════════════════════════════════════════
@@ -57,6 +177,7 @@ function showHome() {
 }
 
 function showView(name) {
+  if ((name === 'registro' || name === 'vacante') && !requiereEdadVerificada(name)) return;
   document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
   document.getElementById('view-' + name).classList.add('active');
   document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active'));
@@ -247,6 +368,7 @@ function formatearFecha(fechaISO) {
 
 document.getElementById('registroForm').addEventListener('submit', async (e) => {
   e.preventDefault();
+  if (!requiereEdadVerificada('registro')) return;
   const form = e.target;
   if (!validateForm(form)) return;
 
@@ -260,6 +382,7 @@ document.getElementById('registroForm').addEventListener('submit', async (e) => 
   const data = {
     nombre:      form.nombre.value.trim(),
     email:       form.email.value.trim(),
+    ciudad:      form.ciudad.value,
     rangos:      JSON.stringify(rangos),
     tareas:      form.tarea.value,
   };
@@ -343,6 +466,7 @@ function updatePreview() {
   const select = document.getElementById('v_institucion');
   const idx    = select.value;
   const tipo   = document.querySelector('input[name="cuando_tipo"]:checked')?.value || 'ahora';
+  const ciudad = document.getElementById('v_ciudad')?.value || '';
   let lugar = '[Lugar]', direccion = '[Direccion]';
   if (idx !== '' && todasInstituciones[parseInt(idx)]) {
     const inst = todasInstituciones[parseInt(idx)];
@@ -363,15 +487,21 @@ function updatePreview() {
     ? ` Tarea requerida: <strong>${esc(etiquetaTarea(tarea))}</strong>.`
     : ' Sin tarea específica (solo voluntarios generales).';
 
+  const ciudadTexto = ciudad
+    ? ` Ciudad: <strong>${esc(ciudad)}</strong>.`
+    : ' Ciudad: <strong>[selecciona ciudad]</strong>.';
+
   document.getElementById('notifyText').innerHTML =
-    `Se necesitan voluntarios en <strong>${esc(lugar)}</strong> ubicado en ${esc(direccion)}, ${cuando}.${tareaTexto}`;
+    `Se necesitan voluntarios en <strong>${esc(lugar)}</strong> (${esc(direccion)}),${ciudadTexto} ${cuando}.${tareaTexto}`;
 }
 
 document.getElementById('v_institucion').addEventListener('change', updatePreview);
+document.getElementById('v_ciudad')?.addEventListener('change', updatePreview);
 document.getElementById('v_tarea')?.addEventListener('change', updatePreview);
 
 document.getElementById('vacanteForm').addEventListener('submit', async (e) => {
   e.preventDefault();
+  if (!requiereEdadVerificada('vacante')) return;
   const form = e.target;
   if (!validateForm(form)) return;
 
@@ -402,6 +532,7 @@ document.getElementById('vacanteForm').addEventListener('submit', async (e) => {
   const data = {
     lugar:       inst.nombre,
     direccion:   inst.direccion,
+    ciudad:      form.ciudad.value,
     cuando:      cuando,
     fecha:       fecha,
     tarea:       form.tarea.value,
@@ -510,7 +641,9 @@ function esc(str) {
 
 // INIT
 document.addEventListener('DOMContentLoaded', () => {
+  initEdadGate();
   poblarSelectsTarea();
+  poblarSelectsCiudad();
   agregarRango();
   cargarContadores();
   updatePreview();

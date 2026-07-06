@@ -9,7 +9,47 @@
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet" />
   <link rel="stylesheet" href="styles.css" />
 </head>
-<body>
+<body class="age-pending">
+
+  <!-- VERIFICACION DE EDAD -->
+  <div class="age-gate" id="ageGate" role="dialog" aria-modal="true" aria-labelledby="ageGateTitle">
+    <div class="age-gate__panel">
+      <div id="ageGateQuestion">
+        <p class="age-gate__eyebrow">Acceso a la plataforma</p>
+        <h2 class="age-gate__title" id="ageGateTitle">¿Eres mayor de 18 años?</h2>
+        <p class="age-gate__desc">Esta plataforma coordina voluntariado en contexto de emergencia. Solo mayores de edad pueden registrarse.</p>
+        <div class="age-gate__actions">
+          <button type="button" class="btn btn--primary btn--full" onclick="mostrarAvisoLegal()">Sí, soy mayor de 18</button>
+          <button type="button" class="btn btn--ghost-dark btn--full" onclick="mostrarBloqueoMenor()">No, soy menor de edad</button>
+        </div>
+      </div>
+      <div id="ageGateLegal" class="hidden">
+        <p class="age-gate__eyebrow">Declaracion de responsabilidad</p>
+        <h2 class="age-gate__title">Asuncion de riesgos</h2>
+        <p class="age-gate__legal">
+          Al continuar, declaras que eres mayor de 18 años y que participas de forma voluntaria.
+          Asumes los riesgos propios de las actividades de ayuda en emergencias, asi como cualquier
+          responsabilidad legal que pueda derivarse de tu participacion. Red Voluntarios VE y
+          Althea Tech Solutions no se hacen responsables de incidentes, danos o conflictos legales
+          que puedan ocurrir durante el voluntariado.
+        </p>
+        <label class="age-gate__check">
+          <input type="checkbox" id="ageGateAccept" onchange="toggleContinuarEdad()" />
+          <span>He leido y acepto. Asumo los riesgos y responsabilidades indicados.</span>
+        </label>
+        <button type="button" class="btn btn--primary btn--full" id="ageGateContinue" disabled onclick="confirmarMayorEdad()">Continuar al sitio</button>
+        <button type="button" class="age-gate__back" onclick="volverPreguntaEdad()">Volver</button>
+      </div>
+      <div id="ageGateBlocked" class="hidden">
+        <div class="age-gate__blocked-icon">!</div>
+        <h2 class="age-gate__title">No puedes registrarte</h2>
+        <p class="age-gate__desc">
+          Esta plataforma es solo para personas mayores de 18 años. Si necesitas ayuda,
+          contacta a un adulto responsable o a las autoridades de emergencia de tu zona.
+        </p>
+      </div>
+    </div>
+  </div>
 
   <!-- HEADER -->
   <header class="site-header">
@@ -112,12 +152,12 @@
         <div class="form-sidebar">
           <p class="section-eyebrow">Voluntarios</p>
           <h2 class="section-title">Registrate para ayudar</h2>
-          <p class="section-desc">Indica en que horarios puedes ayudar y que tarea puedes realizar. Solo te avisamos cuando coinciden fecha, hora y tarea (si la publicacion la pide).</p>
+          <p class="section-desc">Indica tu ciudad, horarios y tarea. Solo te avisamos cuando coinciden ciudad, fecha, hora y tarea (si la publicacion la pide).</p>
           <ul class="benefit-list">
+            <li>Selecciona tu ciudad en Venezuela</li>
             <li>Puedes agregar varios rangos de horario</li>
             <li>Elige una tarea de la lista o dejala sin especificar</li>
-            <li>Si elegiste tarea, solo te avisan cuando la necesitan</li>
-            <li>Si no elegiste tarea, solo te avisan cuando no piden ninguna</li>
+            <li>Solo te avisan cuando coinciden todos los criterios</li>
           </ul>
         </div>
         <div class="form-card">
@@ -131,6 +171,17 @@
               <label for="r_email">Correo electronico</label>
               <input type="email" id="r_email" name="email" placeholder="tu@correo.com" required />
               <span class="field-error" id="err_r_email"></span>
+            </div>
+            <div class="form-group">
+              <label for="r_ciudad">Ciudad</label>
+              <p class="field-hint">Selecciona la ciudad de Venezuela donde puedes ayudar.</p>
+              <div class="select-wrap">
+                <select id="r_ciudad" name="ciudad" required>
+                  <option value="">— Selecciona tu ciudad —</option>
+                </select>
+                <span class="select-arrow">▾</span>
+              </div>
+              <span class="field-error" id="err_r_ciudad"></span>
             </div>
             <div class="form-group">
               <label>En que fechas y horarios puedes ayudar?</label>
@@ -174,15 +225,26 @@
         <div class="form-sidebar">
           <p class="section-eyebrow">Publicar necesidad</p>
           <h2 class="section-title">Necesitas voluntarios?</h2>
-          <p class="section-desc">Selecciona el lugar e indica a que hora necesitas ayuda. Si indicas una tarea, solo se avisa a voluntarios con esa tarea. Si no indicas tarea, solo se avisa a quienes no eligieron ninguna.</p>
+          <p class="section-desc">Indica la ciudad, el lugar y la hora. Solo se avisa a voluntarios de esa ciudad que coinciden en fecha, hora y tarea.</p>
           <div class="flow-steps">
-            <div class="flow-step"><span class="step-num">1</span><span>Elige la institucion o edificio</span></div>
+            <div class="flow-step"><span class="step-num">1</span><span>Elige la ciudad y la institucion</span></div>
             <div class="flow-step"><span class="step-num">2</span><span>Indica fecha, hora y tarea (opcional)</span></div>
-            <div class="flow-step"><span class="step-num">3</span><span>Solo los voluntarios que coinciden reciben el correo</span></div>
+            <div class="flow-step"><span class="step-num">3</span><span>Solo coincidencias en ciudad, horario y tarea reciben correo</span></div>
           </div>
         </div>
         <div class="form-card">
           <form id="vacanteForm" novalidate>
+            <div class="form-group">
+              <label for="v_ciudad">Ciudad</label>
+              <p class="field-hint">Solo se notificara a voluntarios registrados en esta ciudad.</p>
+              <div class="select-wrap">
+                <select id="v_ciudad" name="ciudad" required onchange="updatePreview()">
+                  <option value="">— Selecciona la ciudad —</option>
+                </select>
+                <span class="select-arrow">▾</span>
+              </div>
+              <span class="field-error" id="err_v_ciudad"></span>
+            </div>
             <div class="form-group">
               <label for="v_institucion">En que lugar se necesitan voluntarios?</label>
               <div class="select-wrap">

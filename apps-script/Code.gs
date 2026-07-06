@@ -58,7 +58,7 @@ function testEmail() {
     CORREO_ADMIN,
     'Prueba',
     'Prueba Brevo — Red Voluntarios VE',
-    emailBienvenida('Prueba', JSON.stringify([{ texto: '30/06/2026: 2:00 PM - 6:00 PM' }]), 'transporte'),
+    emailBienvenida('Prueba', JSON.stringify([{ texto: '30/06/2026: 2:00 PM - 6:00 PM' }]), 'transporte', 'Caracas'),
     'Correo de prueba. Si lo recibes, Brevo funciona.'
   );
   Logger.log('Correo de prueba enviado a ' + CORREO_ADMIN);
@@ -90,21 +90,24 @@ function setup() {
   let hVol = ss.getSheetByName('Voluntarios');
   if (!hVol) {
     hVol = ss.insertSheet('Voluntarios');
-    hVol.getRange(1,1,1,4)
-      .setValues([['Nombre','Correo','Rangos_Horario','Tareas']])
+    hVol.getRange(1,1,1,5)
+      .setValues([['Nombre','Correo','Ciudad','Rangos_Horario','Tareas']])
       .setFontWeight('bold');
     hVol.setFrozenRows(1);
+  } else {
+    asegurarColumnaCiudad(hVol);
   }
 
   let hVac = ss.getSheetByName('Vacantes');
   if (!hVac) {
     hVac = ss.insertSheet('Vacantes');
-    hVac.getRange(1,1,1,8)
-      .setValues([['Lugar','Direccion','Cuando','Descripcion','Tarea','Contacto','Fecha_Necesidad','Fecha_Publicacion']])
+    hVac.getRange(1,1,1,9)
+      .setValues([['Lugar','Direccion','Ciudad','Cuando','Descripcion','Tarea','Contacto','Fecha_Necesidad','Fecha_Publicacion']])
       .setFontWeight('bold');
     hVac.setFrozenRows(1);
   } else {
     asegurarColumnaTarea(hVac);
+    asegurarColumnaCiudad(hVac);
   }
 
   renombrarColumnaSiExiste(ss.getSheetByName('Voluntarios'), 'Habilidades', 'Tareas');
@@ -188,9 +191,19 @@ const TAREAS_VALIDAS = {
   'seleccion de ropa': 'Selección de ropa',
   'entretenimiento para los damnificados': 'Entretenimiento para los damnificados',
   'seguridad': 'Seguridad',
-  'ayuda en los refugios': 'ayuda en los refugios',
-  'remover escombros': 'remover escombros'
+  'refugios': 'Ayudar en refugios',
+  'limpiar': 'Remover escombros',
 };
+
+const CIUDADES_VALIDAS = [
+  'Caracas', 'La Guaira', 'Los Teques', 'Maracaibo', 'Cabimas', 'Valencia',
+  'Puerto Cabello', 'Barquisimeto', 'Maracay', 'Ciudad Guayana', 'Puerto Ordaz',
+  'San Cristóbal', 'Mérida', 'Barcelona', 'Puerto La Cruz', 'Maturín',
+  'Ciudad Bolívar', 'Cumaná', 'Barinas', 'Punto Fijo', 'Coro',
+  'San Fernando de Apure', 'San Juan de los Morros', 'La Asunción', 'San Carlos',
+  'Trujillo', 'Valera', 'Guanare', 'San Felipe', 'Acarigua', 'Carúpano',
+  'El Vigía', 'Tucupita', 'Puerto Ayacucho',
+];
 
 function indiceColumna(headers, nombres, fallback) {
   for (var i = 0; i < nombres.length; i++) {
@@ -233,6 +246,44 @@ function tareasCoinciden(tareaVacante, tareaVoluntario) {
   if (!req) return !of;
   if (!of) return false;
   return req === of;
+}
+
+function normalizarCiudad(str) {
+  if (!str || !String(str).trim()) return '';
+  const limpia = String(str).trim().toLowerCase()
+    .normalize('NFD').replace(/[\u0300-\u036f]/g, '');
+  for (var i = 0; i < CIUDADES_VALIDAS.length; i++) {
+    const c = CIUDADES_VALIDAS[i];
+    const norm = c.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '');
+    if (norm === limpia) return c;
+  }
+  return '';
+}
+
+function ciudadesCoinciden(ciudadVacante, ciudadVoluntario) {
+  const req = normalizarCiudad(ciudadVacante);
+  const of  = normalizarCiudad(ciudadVoluntario);
+  if (!req || !of) return false;
+  return req === of;
+}
+
+function asegurarColumnaCiudad(hoja) {
+  if (!hoja || hoja.getLastRow() < 1) return;
+  const headers = hoja.getRange(1, 1, 1, Math.max(1, hoja.getLastColumn())).getValues()[0];
+  if (indiceColumna(headers, ['Ciudad'], -1) >= 0) return;
+
+  const correoIdx = indiceColumna(headers, ['Correo'], 1);
+  const dirIdx    = indiceColumna(headers, ['Direccion'], 1);
+
+  if (correoIdx >= 0 && hoja.getName() === 'Voluntarios') {
+    hoja.insertColumnAfter(correoIdx + 1);
+    hoja.getRange(1, correoIdx + 2).setValue('Ciudad').setFontWeight('bold');
+  } else if (dirIdx >= 0 && hoja.getName() === 'Vacantes') {
+    hoja.insertColumnAfter(dirIdx + 1);
+    hoja.getRange(1, dirIdx + 2).setValue('Ciudad').setFontWeight('bold');
+  } else {
+    hoja.getRange(1, headers.length + 1).setValue('Ciudad').setFontWeight('bold');
+  }
 }
 
 function renombrarColumnaSiExiste(hoja, nombreViejo, nombreNuevo) {
@@ -332,32 +383,47 @@ function getContadores() {
 function registrarVoluntario(data) {
   try {
     const hoja  = SpreadsheetApp.openById(SHEET_ID).getSheetByName('Voluntarios');
+    asegurarColumnaCiudad(hoja);
+
+    const ciudad = normalizarCiudad(data.ciudad);
+    if (!ciudad) return { success: false, error: 'Selecciona una ciudad valida de Venezuela.' };
+
     const datos = hoja.getDataRange().getValues();
-    const filaExistente = datos.findIndex((f, i) => i > 0 && f[1] === data.email);
+    const headers = datos[0];
+    const iCorreo = indiceColumna(headers, ['Correo'], 1);
+    const iRangos = indiceColumna(headers, ['Rangos_Horario'], 3);
+    const iTareas = indiceColumna(headers, ['Tareas', 'Tarea', 'Habilidades', 'Habilidad'], 4);
+    const iCiudad = indiceColumna(headers, ['Ciudad'], 2);
+
+    const filaExistente = datos.findIndex((f, i) => i > 0 && f[iCorreo] === data.email);
 
     const nuevosRangos = JSON.parse(data.rangos || '[]');
     let rangosFinales = nuevosRangos;
     let esActualizacion = false;
 
+    const tareaVal = tareaVoluntario(data.tareas || data.habilidades || '');
+
     if (filaExistente > 0) {
       esActualizacion = true;
       let rangosPrevios = [];
-      try { rangosPrevios = JSON.parse(datos[filaExistente][2] || '[]'); } catch {}
+      try { rangosPrevios = JSON.parse(datos[filaExistente][iRangos] || '[]'); } catch {}
       rangosFinales = rangosPrevios.concat(nuevosRangos);
 
       const fila = filaExistente + 1;
-      hoja.getRange(fila, 1, 1, 4).setValues([[
-        data.nombre,
-        data.email,
-        JSON.stringify(rangosFinales),
-        tareaVoluntario(data.tareas || data.habilidades || '') || datos[filaExistente][3] || '',
-      ]]);
+      hoja.getRange(fila, 1).setValue(data.nombre);
+      hoja.getRange(fila, iCorreo + 1).setValue(data.email);
+      hoja.getRange(fila, iCiudad + 1).setValue(ciudad);
+      hoja.getRange(fila, iRangos + 1).setValue(JSON.stringify(rangosFinales));
+      hoja.getRange(fila, iTareas + 1).setValue(
+        tareaVal || datos[filaExistente][iTareas] || ''
+      );
     } else {
       hoja.appendRow([
         data.nombre,
         data.email,
+        ciudad,
         data.rangos || '[]',
-        tareaVoluntario(data.tareas || data.habilidades || ''),
+        tareaVal,
       ]);
     }
 
@@ -366,7 +432,7 @@ function registrarVoluntario(data) {
       .join(' | ');
 
     const tareaForm = tareaVoluntario(data.tareas || data.habilidades || '');
-    const tareaGuardada = tareaForm || (filaExistente > 0 ? normalizarTarea(datos[filaExistente][3]) : '');
+    const tareaGuardada = tareaForm || (filaExistente > 0 ? normalizarTarea(datos[filaExistente][iTareas]) : '');
     const tareaCorreo = textoTareaRegistro(tareaGuardada);
 
     enviarCorreoBrevo(
@@ -375,9 +441,10 @@ function registrarVoluntario(data) {
       esActualizacion
         ? 'Tu horario fue actualizado — Red Voluntarios Venezuela'
         : 'Gracias por registrarte — Red Voluntarios Venezuela',
-      emailBienvenida(data.nombre, JSON.stringify(rangosFinales), tareaGuardada),
+      emailBienvenida(data.nombre, JSON.stringify(rangosFinales), tareaGuardada, ciudad),
       'Hola ' + data.nombre + '. ' +
         (esActualizacion ? 'Agregamos tu nuevo horario.' : 'Gracias por registrarte.') +
+        ' Ciudad: ' + ciudad + '.' +
         ' Tus horarios actuales: ' + rangosTexto +
         '. Tu tarea: ' + tareaCorreo + '.' +
         ' Te avisaremos cuando haya una necesidad que coincida.'
@@ -398,13 +465,17 @@ function registrarVacante(data) {
     const ss   = SpreadsheetApp.openById(SHEET_ID);
     const hVac = ss.getSheetByName('Vacantes');
     asegurarColumnaTarea(hVac);
+    asegurarColumnaCiudad(hVac);
 
     const fechaVacante = data.fecha || fechaHoyVenezuela();
     const tareaVacante = normalizarTarea(data.tarea || data.habilidad || '');
+    const ciudadVacante = normalizarCiudad(data.ciudad);
+    if (!ciudadVacante) return { success: false, error: 'Selecciona una ciudad valida de Venezuela.' };
 
     hVac.appendRow([
       data.lugar,
       data.direccion,
+      ciudadVacante,
       data.cuando,
       data.descripcion || '',
       tareaVacante,
@@ -415,7 +486,7 @@ function registrarVacante(data) {
 
     notificarVoluntarios(
       ss, data.lugar, data.direccion, data.cuando, fechaVacante,
-      data.contacto, tareaVacante, data.descripcion || ''
+      data.contacto, tareaVacante, data.descripcion || '', ciudadVacante
     );
 
     return { success: true };
@@ -424,15 +495,18 @@ function registrarVacante(data) {
   }
 }
 
-function notificarVoluntarios(ss, lugar, direccion, cuando, fechaVacante, contacto, tareaRequerida, descripcion) {
+function notificarVoluntarios(ss, lugar, direccion, cuando, fechaVacante, contacto, tareaRequerida, descripcion, ciudadRequerida) {
   const hVol    = ss.getSheetByName('Voluntarios');
+  asegurarColumnaCiudad(hVol);
   const datos   = hVol.getDataRange().getValues();
   const headers = datos[0];
   const iNombre  = indiceColumna(headers, ['Nombre'], 0);
   const iCorreo  = indiceColumna(headers, ['Correo'], 1);
-  const iRangos  = indiceColumna(headers, ['Rangos_Horario'], 2);
-  const iTareas  = indiceColumna(headers, ['Tareas', 'Tarea', 'Habilidades', 'Habilidad'], 3);
+  const iCiudad  = indiceColumna(headers, ['Ciudad'], 2);
+  const iRangos  = indiceColumna(headers, ['Rangos_Horario'], 3);
+  const iTareas  = indiceColumna(headers, ['Tareas', 'Tarea', 'Habilidades', 'Habilidad'], 4);
   const tareaReq = normalizarTarea(tareaRequerida || '');
+  const ciudadReq = normalizarCiudad(ciudadRequerida || '');
 
   const esAhora = cuando === 'AHORA MISMO';
   const minutosSolicitados = esAhora ? horaActualVenezuelaEnMinutos() : horaAMinutos(cuando);
@@ -440,6 +514,8 @@ function notificarVoluntarios(ss, lugar, direccion, cuando, fechaVacante, contac
 
   const compatibles = datos.slice(1).filter(fila => {
     if (!fila[iCorreo]) return false;
+
+    if (!ciudadesCoinciden(ciudadReq, fila[iCiudad])) return false;
 
     const tareaVol = String(fila[iTareas] || '').trim();
     if (!tareasCoinciden(tareaReq, tareaVol)) return false;
@@ -457,21 +533,22 @@ function notificarVoluntarios(ss, lugar, direccion, cuando, fechaVacante, contac
   const tareaTexto = tareaReq
     ? ' con tarea "' + etiquetaTarea(tareaReq) + '"'
     : ' (sin tarea especifica)';
+  const ciudadTexto = ciudadReq ? ' en ' + ciudadReq : '';
 
   if (!compatibles.length) {
     enviarCorreoBrevo(
       CORREO_ADMIN,
       'Admin',
       'Sin voluntarios disponibles para: ' + lugar,
-      '<p>Se publico una necesidad en <strong>' + e(lugar) + '</strong> para ' +
+      '<p>Se publico una necesidad en <strong>' + e(lugar) + '</strong>' + e(ciudadTexto) + ' para ' +
         (esAhora ? 'AHORA MISMO' : e(convertir24aAmPm(cuando))) +
         ' (' + e(fechaSolicitada) + ')' + e(tareaTexto) +
-        ', pero ningun voluntario coincide con fecha, horario y tarea.</p>',
-      'Se publico una necesidad en ' + lugar + ' para ' + (esAhora ? 'AHORA MISMO' : cuando) +
+        ', pero ningun voluntario coincide con ciudad, fecha, horario y tarea.</p>',
+      'Se publico una necesidad en ' + lugar + ciudadTexto + ' para ' + (esAhora ? 'AHORA MISMO' : cuando) +
         ' (' + fechaSolicitada + ')' + tareaTexto +
         ', pero ningun voluntario coincide.'
     );
-    Logger.log('Sin voluntarios para "' + cuando + '" (' + fechaSolicitada + ') en ' + lugar + tareaTexto);
+    Logger.log('Sin voluntarios para "' + cuando + '" (' + fechaSolicitada + ')' + ciudadTexto + ' en ' + lugar + tareaTexto);
     return;
   }
 
@@ -484,8 +561,9 @@ function notificarVoluntarios(ss, lugar, direccion, cuando, fechaVacante, contac
         correo,
         nombre,
         'Se necesitan voluntarios en ' + lugar + ' — ' + (esAhora ? 'AHORA MISMO' : convertir24aAmPm(cuando)),
-        emailNotificacion(nombre, lugar, direccion, cuando, fechaSolicitada, contacto, tareaReq, descripcion),
+        emailNotificacion(nombre, lugar, direccion, cuando, fechaSolicitada, contacto, tareaReq, descripcion, ciudadReq),
         'Hola ' + nombre + '. Se necesitan voluntarios en ' + lugar + ', ' + direccion +
+          '. Ciudad: ' + ciudadReq +
           '. Hora: ' + (esAhora ? 'AHORA MISMO' : convertir24aAmPm(cuando)) +
           '. Tarea: ' + textoTareaVacante(tareaReq) +
           (contacto ? '. Contacto: ' + contacto : '')
@@ -496,14 +574,14 @@ function notificarVoluntarios(ss, lugar, direccion, cuando, fechaVacante, contac
     }
   });
 
-  Logger.log(lugar + ' (' + cuando + ', ' + fechaSolicitada + ')' + tareaTexto + ' — ' + enviados + ' notificados.');
+  Logger.log(lugar + ciudadTexto + ' (' + cuando + ', ' + fechaSolicitada + ')' + tareaTexto + ' — ' + enviados + ' notificados.');
 }
 
 // ══════════════════════════════════════════════
 //  PLANTILLAS DE CORREO
 // ══════════════════════════════════════════════
 
-function emailNotificacion(nombre, lugar, direccion, cuando, fechaISO, contacto, tarea, descripcion) {
+function emailNotificacion(nombre, lugar, direccion, cuando, fechaISO, contacto, tarea, descripcion, ciudad) {
   const esAhora = cuando === 'AHORA MISMO';
   const horaDisplay = esAhora ? 'AHORA MISMO' : convertir24aAmPm(cuando);
   const fechaDisplay = fechaISO ? formatearFechaLegible(fechaISO) : '';
@@ -517,10 +595,11 @@ function emailNotificacion(nombre, lugar, direccion, cuando, fechaISO, contacto,
   <div style="background:#ffffff;padding:28px 24px;border:1px solid #C8D8EF;border-radius:0 0 12px 12px;">
     <h2 style="color:#1A3A6B;margin-top:0;">Hola, ${e(nombre)}</h2>
     <p style="color:#4A4A4A;line-height:1.6;">
-      Se necesitan voluntarios y tu horario y tarea coinciden con esta necesidad:
+      Se necesitan voluntarios y tu ciudad, horario y tarea coinciden con esta necesidad:
     </p>
     <div style="background:#FDF0E6;border-left:4px solid #E87A35;border-radius:4px;padding:18px;margin:16px 0;">
       <p style="color:#E87A35;font-weight:700;font-size:18px;margin:0 0 10px;">${e(lugar)}</p>
+      <p style="color:#4A4A4A;margin:5px 0;">Ciudad: <strong>${e(ciudad || '')}</strong></p>
       <p style="color:#4A4A4A;margin:5px 0;">Direccion: ${e(direccion)}</p>
       ${fechaDisplay ? `<p style="color:#4A4A4A;margin:5px 0;">Dia: <strong>${e(fechaDisplay)}</strong></p>` : ''}
       <p style="color:#4A4A4A;margin:5px 0;">Hora: <strong>${e(horaDisplay)}</strong></p>
@@ -544,7 +623,7 @@ function formatearFechaLegible(fechaISO) {
   return `${diaSemana} ${d} de ${meses[m-1]} de ${y}`;
 }
 
-function emailBienvenida(nombre, rangosJson, tarea) {
+function emailBienvenida(nombre, rangosJson, tarea, ciudad) {
   let listaRangos = '<li style="color:#767676;">Sin horarios registrados</li>';
   try {
     const rangos = JSON.parse(rangosJson || '[]');
@@ -568,12 +647,13 @@ function emailBienvenida(nombre, rangosJson, tarea) {
       Gracias por registrarte. Tu disposicion a ayudar en esta emergencia es invaluable.
     </p>
     <div style="background:#E8F0FA;border-radius:8px;padding:14px 16px;margin:16px 0;">
+      <p style="color:#1A3A6B;font-weight:600;margin:0 0 8px;">Tu ciudad: <span style="font-weight:500;color:#4A4A4A;">${e(ciudad || '')}</span></p>
       <p style="color:#1A3A6B;font-weight:600;margin:0 0 8px;">Tus horarios registrados:</p>
       <ul style="list-style:none;padding:0;margin:0;">${listaRangos}</ul>
       <p style="color:#1A3A6B;font-weight:600;margin:16px 0 0;">Tu tarea: <span style="font-weight:500;color:#4A4A4A;">${e(tareaDisplay)}</span></p>
     </div>
     <p style="color:#4A4A4A;line-height:1.6;">
-      Cuando alguien publique una necesidad que coincida con tu horario y tarea, recibiras un correo automatico al instante.
+      Cuando alguien publique una necesidad en tu ciudad que coincida con tu horario y tarea, recibiras un correo automatico al instante.
     </p>
     <p style="color:#999999;font-size:12px;margin-top:20px;border-top:1px solid #eeeeee;padding-top:14px;">
       Red Voluntarios Venezuela - 2026
