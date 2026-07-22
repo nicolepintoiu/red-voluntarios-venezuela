@@ -188,7 +188,12 @@ function showView(name) {
   if (hero) hero.classList.toggle('hidden', name === 'refugios');
   closeMobileNav();
   window.scrollTo({ top: 0, behavior: 'smooth' });
-  if (name === 'refugios') loadRefugios();
+  if (name === 'refugios') {
+    loadRefugios();
+    setTimeout(() => {
+      if (mapaInstituciones) mapaInstituciones.invalidateSize();
+    }, 120);
+  }
   if (name === 'vacante')  cargarInstitucionesEnSelector();
 }
 
@@ -233,19 +238,169 @@ function animarContador(id, total) {
 }
 
 // ══════════════════════════════════════════════
-//  VIEW 1 — REFUGIOS
+//  VIEW 1 — REFUGIOS + MAPA
 // ══════════════════════════════════════════════
 
 let todasInstituciones = [];
+let mapaInstituciones = null;
+let capaMarcadores = null;
+const GEO_CACHE_KEY = 'rv_geo_cache_v1';
+const MAP_CENTER_VE = [7.5, -66.0];
+const MAP_ZOOM_DEFAULT = 6;
+
+function setMapStatus(msg) {
+  const el = document.getElementById('mapStatus');
+  if (el) el.textContent = msg;
+}
+
+function initMapa() {
+  const el = document.getElementById('institutionsMap');
+  if (!el || typeof L === 'undefined') {
+    setMapStatus('No se pudo cargar el mapa.');
+    return;
+  }
+  if (mapaInstituciones) {
+    setTimeout(() => mapaInstituciones.invalidateSize(), 50);
+    return;
+  }
+
+  mapaInstituciones = L.map(el, { scrollWheelZoom: false }).setView(MAP_CENTER_VE, MAP_ZOOM_DEFAULT);
+  L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+    maxZoom: 19,
+    attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>',
+  }).addTo(mapaInstituciones);
+  capaMarcadores = L.layerGroup().addTo(mapaInstituciones);
+  setMapStatus('Listo');
+}
+
+function leerGeoCache() {
+  try {
+    return JSON.parse(localStorage.getItem(GEO_CACHE_KEY) || '{}');
+  } catch {
+    return {};
+  }
+}
+
+function guardarGeoCache(cache) {
+  try {
+    localStorage.setItem(GEO_CACHE_KEY, JSON.stringify(cache));
+  } catch { /* ignore quota */ }
+}
+
+function coordsDesdeHoja(inst) {
+  const lat = parseFloat(inst.latitud || inst.lat || inst.Latitud || '');
+  const lng = parseFloat(inst.longitud || inst.lng || inst.lon || inst.Longitud || '');
+  if (Number.isFinite(lat) && Number.isFinite(lng)) return { lat, lng };
+  return null;
+}
+
+async function geocodificarDireccion(query) {
+  const url = 'https://nominatim.openstreetmap.org/search?' + new URLSearchParams({
+    q: query,
+    format: 'json',
+    limit: '1',
+    countrycodes: 've',
+  });
+  const res = await fetch(url, {
+    headers: { Accept: 'application/json' },
+  });
+  if (!res.ok) throw new Error('Geocoding HTTP ' + res.status);
+  const data = await res.json();
+  if (!data.length) return null;
+  return { lat: parseFloat(data[0].lat), lng: parseFloat(data[0].lon) };
+}
+
+async function resolverCoordenadas(list) {
+  const cache = leerGeoCache();
+  const resultados = [];
+
+  for (let i = 0; i < list.length; i++) {
+    const inst = list[i];
+    const nombre = String(inst.nombre || '').trim();
+    const direccion = String(inst.direccion || '').trim();
+    const cacheKey = (nombre + '|' + direccion).toLowerCase();
+
+    const desdeHoja = coordsDesdeHoja(inst);
+    if (desdeHoja) {
+      resultados.push({ inst, coords: desdeHoja });
+      continue;
+    }
+
+    if (cache[cacheKey]) {
+      resultados.push({ inst, coords: cache[cacheKey] });
+      continue;
+    }
+
+    if (!direccion && !nombre) continue;
+
+    setMapStatus(`Ubicando ${i + 1} de ${list.length}…`);
+    try {
+      const query = [nombre, direccion, 'Venezuela'].filter(Boolean).join(', ');
+      const coords = await geocodificarDireccion(query);
+      if (coords) {
+        cache[cacheKey] = coords;
+        guardarGeoCache(cache);
+        resultados.push({ inst, coords });
+      }
+    } catch {
+      // continuar con el resto
+    }
+    // Nominatim: max 1 solicitud/segundo
+    if (i < list.length - 1) await delay(1100);
+  }
+
+  return resultados;
+}
+
+function renderMapa(list) {
+  if (!mapaInstituciones || !capaMarcadores) initMapa();
+  if (!mapaInstituciones || !capaMarcadores) return;
+
+  capaMarcadores.clearLayers();
+  if (!list.length) {
+    setMapStatus('Sin lugares para mostrar');
+    mapaInstituciones.setView(MAP_CENTER_VE, MAP_ZOOM_DEFAULT);
+    return;
+  }
+
+  setMapStatus('Buscando ubicaciones…');
+  resolverCoordenadas(list).then(puntos => {
+    capaMarcadores.clearLayers();
+    const bounds = [];
+
+    puntos.forEach(({ inst, coords }) => {
+      const marker = L.marker([coords.lat, coords.lng]);
+      marker.bindPopup(
+        `<div class="map-popup-name">${esc(inst.nombre || '')}</div>` +
+        `<div class="map-popup-address">${esc(inst.direccion || '')}</div>`
+      );
+      marker.addTo(capaMarcadores);
+      bounds.push([coords.lat, coords.lng]);
+    });
+
+    if (bounds.length) {
+      mapaInstituciones.fitBounds(bounds, { padding: [28, 28], maxZoom: 14 });
+      setMapStatus(bounds.length + ' ubicacion' + (bounds.length === 1 ? '' : 'es') + ' en el mapa');
+    } else {
+      mapaInstituciones.setView(MAP_CENTER_VE, MAP_ZOOM_DEFAULT);
+      setMapStatus('No se encontraron coordenadas para estos lugares');
+    }
+
+    setTimeout(() => mapaInstituciones.invalidateSize(), 80);
+  });
+}
 
 async function loadRefugios() {
   const grid = document.getElementById('cardGrid');
   grid.innerHTML = '<div class="skeleton-card"></div><div class="skeleton-card"></div><div class="skeleton-card"></div>';
+  initMapa();
   try {
     todasInstituciones = await fetchInstituciones();
     renderCards(todasInstituciones);
+    renderMapa(todasInstituciones);
   } catch {
     grid.innerHTML = '<div class="no-results"><p>No se pudo cargar la lista. Verifica tu conexion.</p></div>';
+    setMapStatus('Error al cargar instituciones');
   }
 }
 
@@ -271,12 +426,13 @@ function renderCards(list) {
 
 function filterCards() {
   const q = document.getElementById('searchInput').value.toLowerCase().trim();
-  if (!q) { renderCards(todasInstituciones); return; }
-  renderCards(todasInstituciones.filter(r =>
+  const filtradas = !q ? todasInstituciones : todasInstituciones.filter(r =>
     r.nombre.toLowerCase().includes(q) ||
     r.direccion.toLowerCase().includes(q) ||
     (r.tipo||'').toLowerCase().includes(q)
-  ));
+  );
+  renderCards(filtradas);
+  renderMapa(filtradas);
 }
 
 // ══════════════════════════════════════════════

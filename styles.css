@@ -105,6 +105,57 @@ input, select, textarea { font-family: inherit; }
 .no-results-icon { font-size: 2rem; margin-bottom: 10px; }
 .refresh-row { margin-top: 20px; text-align: center; }
 
+/* MAPA */
+.map-section {
+  margin-bottom: 24px;
+  background: var(--white);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  overflow: hidden;
+  box-shadow: var(--shadow-sm);
+}
+.map-header {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 12px;
+  flex-wrap: wrap;
+  padding: 14px 16px 10px;
+}
+.map-title {
+  font-size: .9rem;
+  font-weight: 700;
+  color: var(--azul);
+}
+.map-status {
+  font-size: .78rem;
+  color: var(--stone-light);
+}
+.institutions-map {
+  width: 100%;
+  height: 320px;
+  background: var(--azul-pale);
+  z-index: 1;
+}
+@media (min-width: 600px) {
+  .institutions-map { height: 400px; }
+}
+.leaflet-popup-content {
+  margin: 10px 12px;
+  font-family: 'Inter', system-ui, sans-serif;
+}
+.map-popup-name {
+  font-weight: 700;
+  color: var(--azul);
+  margin-bottom: 4px;
+  font-size: .9rem;
+}
+.map-popup-address {
+  font-size: .8rem;
+  color: var(--stone-light);
+  line-height: 1.4;
+}
+
 /* FORM LAYOUT */
 .form-container { display: flex; flex-direction: column; gap: 36px; }
 .form-sidebar { max-width: 420px; }

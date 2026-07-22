@@ -74,8 +74,8 @@ function setup() {
   let hInst = ss.getSheetByName('Instituciones');
   if (!hInst) {
     hInst = ss.insertSheet('Instituciones');
-    hInst.getRange(1,1,1,5)
-      .setValues([['nombre','direccion','contacto','estado','fecha']])
+    hInst.getRange(1,1,1,7)
+      .setValues([['nombre','direccion','contacto','estado','fecha','latitud','longitud']])
       .setFontWeight('bold');
     hInst.setFrozenRows(1);
     hInst.appendRow([
